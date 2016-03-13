@@ -6,7 +6,7 @@ Console
   [![Build Status](https://api.travis-ci.org/wookay/Console.svg?branch=master)](https://travis-ci.org/wookay/Console)
 
 
-# Run server with your iOS app
+# Run server on your iOS app
 ```swift
 class ViewController: UIViewController {
     override func viewDidLoad() {
@@ -16,7 +16,7 @@ class ViewController: UIViewController {
 ```
 
 
-# REPL with Julia
+# REPL client with Julia
 ```julia
 using Swifter
 
