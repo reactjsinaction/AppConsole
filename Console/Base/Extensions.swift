@@ -74,35 +74,11 @@ func return_types(obj: AnyObject, _ name: String) -> String {
 }
 
 
-// MARK: Logger
-
-class Logger {
-    func info(args: Any..., file: StaticString = __FILE__, function: String = __FUNCTION__, line: Int = __LINE__ ) {
-        let filename = (String(file) as NSString).lastPathComponent
-
-        var str = ""
-        str += "\(filename) #\(line) "
-        str += "\(function)() "
-        let length = args.count
-        for (index, x) in args.enumerate() {
-            str += String(x)
-            if length==index+1 {
-                
-            } else {
-                str += " "
-            }
-        }
-        str += "\n"
-        print(str)
-        
-        
-    }
-}
-
-let Log = Logger()
-
 
 // MARK: UnitTest
+
+// using some part of bnickel/RestorationDefender.swift
+// https://gist.github.com/bnickel/410a1bdc02f12fbd9b5e
 
 func enumerateCArray<T>(array: UnsafePointer<T>, count: UInt32, f: (UInt32, T) -> ()) {
     var ptr = array
@@ -121,7 +97,7 @@ func methodName(m: Method) -> String? {
 public func objc_TestClassList() -> [AnyClass] {
     let expectedClassCount = objc_getClassList(nil, 0)
     let allClasses = UnsafeMutablePointer<AnyClass?>.alloc(Int(expectedClassCount))
-    let autoreleasingAllClasses = AutoreleasingUnsafeMutablePointer<AnyClass?>(allClasses) // Huh? We should have gotten this for free.
+    let autoreleasingAllClasses = AutoreleasingUnsafeMutablePointer<AnyClass?>(allClasses)
     let actualClassCount:Int32 = objc_getClassList(autoreleasingAllClasses, expectedClassCount)
     
     var classes = [AnyClass]()
@@ -163,7 +139,7 @@ struct TestResult {
 let ansi_escape = "\u{001b}["
 let ansi_brown  = ansi_escape + "fg52,91,151;"
 let ansi_red    = ansi_escape + "fg215,50,50;"
-let ansi_green    = ansi_escape + "fg0,155,0;"
+let ansi_green  = ansi_escape + "fg0,155,0;"
 let ansi_reset  = ansi_escape + ";"
 
 class UnitTest {
@@ -220,3 +196,31 @@ class UnitTest {
         return TestResult(tests: tests, passed: passed, failed: failed, errors: errors)
     }
 }
+
+
+
+
+// MARK: Logger
+
+class Logger {
+    func info(args: Any..., file: StaticString = __FILE__, function: String = __FUNCTION__, line: Int = __LINE__ ) {
+        let filename = (String(file) as NSString).lastPathComponent
+        
+        var str = ""
+        str += "\(filename) #\(line) "
+        str += "\(function)() "
+        let length = args.count
+        for (index, x) in args.enumerate() {
+            str += String(x)
+            if length==index+1 {
+                
+            } else {
+                str += " "
+            }
+        }
+        str += "\n"
+        print(str)
+    }
+}
+
+let Log = Logger()
