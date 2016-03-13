@@ -1,0 +1,8 @@
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1
+HEADER_SEARCH_PATHS = "${PODS_ROOT}/Headers/Private" "${PODS_ROOT}/Headers/Private/NetUtils" "${PODS_ROOT}/Headers/Public"
+OTHER_SWIFT_FLAGS = $(inherited) "-D" "COCOAPODS"
+PODS_ROOT = ${SRCROOT}
+SKIP_INSTALL = YES
+SWIFT_INCLUDE_PATHS[sdk=iphoneos*] = $(SRCROOT)/NetUtils/ifaddrs/iphoneos
+SWIFT_INCLUDE_PATHS[sdk=iphonesimulator*] = $(SRCROOT)/NetUtils/ifaddrs/iphonesimulator
+SWIFT_INCLUDE_PATHS[sdk=macosx*] = $(SRCROOT)/NetUtils/ifaddrs/macosx
