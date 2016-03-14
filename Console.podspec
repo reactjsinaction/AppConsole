@@ -15,8 +15,8 @@ Pod::Spec.new do |s|
   #  summary should be tweet-length, and the description more in depth.
   #
 
-  s.name         = "Console"
-  s.version      = "0.0.2"
+  s.name         = "AppConsole"
+  s.version      = "0.0.3"
   s.summary      = "Console for Swifter.jl"
 
   # This description is used to generate tags and improve search results.
@@ -28,7 +28,7 @@ Pod::Spec.new do |s|
   iOS REPL with Swifter.jl + Console 
   DESC
 
-  s.homepage     = "https://github.com/wookay/Console"
+  s.homepage     = "https://github.com/wookay/AppConsole"
   # s.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"
 
 
@@ -79,7 +79,7 @@ Pod::Spec.new do |s|
   #  Supports git, hg, bzr, svn and HTTP.
   #
 
-  s.source       = { :git => "https://github.com/wookay/Console.git",
+  s.source       = { :git => "https://github.com/wookay/AppConsole.git",
                      :tag => "v#{s.version}"
                    }
 
