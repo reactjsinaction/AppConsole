@@ -10,19 +10,19 @@ import UIKit
 import Swifter
 import NetUtils
 
-class Console {
+public class AppConsole {
     
     var initial: UIViewController
     let server = HttpServer()
 
-    init(initial: UIViewController) {
+    public init(initial: UIViewController) {
         self.initial = initial
     }
     
     
-    // MARK: Console - run
+    // MARK: AppConsole - run
     
-    func run(port: Int = 8080) -> String {
+    public func run(port: Int = 8080) -> String {
         ConsoleRouter().route(server, initial: initial)
         try! server.start(UInt16(port))
         let url = "http://\(localip()):\(port)"

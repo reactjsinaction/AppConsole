@@ -17,7 +17,7 @@ class ViewController: UIViewController {
         
 //        UnitTest.run(only: "TypeHandlerTests")
         
-        label.text = Console(initial: self).run()
+        label.text = AppConsole(initial: self).run()
     }
 
     override func didReceiveMemoryWarning() {

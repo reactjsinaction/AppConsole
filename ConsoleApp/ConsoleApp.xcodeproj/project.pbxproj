@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1C3EB37A1C95868300AA2D0F /* Console.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB3791C95868300AA2D0F /* Console.swift */; };
+		1C3EB37A1C95868300AA2D0F /* AppConsole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB3791C95868300AA2D0F /* AppConsole.swift */; };
 		1C3EB37C1C95873C00AA2D0F /* TypeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB37B1C95873C00AA2D0F /* TypeHandler.swift */; };
 		1C3EB37E1C9587D500AA2D0F /* TypeHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB37D1C9587D500AA2D0F /* TypeHandlerTests.swift */; };
 		1C3EB3D41C95882B00AA2D0F /* XCTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB3D21C95882B00AA2D0F /* XCTest.swift */; };
@@ -15,7 +15,7 @@
 		1C3EB3DC1C95A3DF00AA2D0F /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB3D71C95888E00AA2D0F /* Extensions.swift */; };
 		1C3EB3DD1C95A3E100AA2D0F /* TypeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB37B1C95873C00AA2D0F /* TypeHandler.swift */; };
 		1C3EB3DE1C95A3E300AA2D0F /* ConsoleRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4A31EF1C9505FD00D58787 /* ConsoleRouter.swift */; };
-		1C3EB3DF1C95A3E600AA2D0F /* Console.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB3791C95868300AA2D0F /* Console.swift */; };
+		1C3EB3DF1C95A3E600AA2D0F /* AppConsole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB3791C95868300AA2D0F /* AppConsole.swift */; };
 		1C3EB3E01C95A44C00AA2D0F /* TypeHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB37D1C9587D500AA2D0F /* TypeHandlerTests.swift */; };
 		1C3EB3E21C95A52500AA2D0F /* WTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3EB3E11C95A52500AA2D0F /* WTest.swift */; };
 		1C4A31EC1C9503C600D58787 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1C4A31EB1C9503C600D58787 /* Info.plist */; };
@@ -40,7 +40,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		1C3EB3791C95868300AA2D0F /* Console.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Console.swift; sourceTree = "<group>"; };
+		1C3EB3791C95868300AA2D0F /* AppConsole.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppConsole.swift; sourceTree = "<group>"; };
 		1C3EB37B1C95873C00AA2D0F /* TypeHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TypeHandler.swift; sourceTree = "<group>"; };
 		1C3EB37D1C9587D500AA2D0F /* TypeHandlerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TypeHandlerTests.swift; sourceTree = "<group>"; };
 		1C3EB3D21C95882B00AA2D0F /* XCTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = XCTest.swift; sourceTree = "<group>"; };
@@ -106,7 +106,7 @@
 		1C4A31E91C9503C600D58787 /* Base */ = {
 			isa = PBXGroup;
 			children = (
-				1C3EB3791C95868300AA2D0F /* Console.swift */,
+				1C3EB3791C95868300AA2D0F /* AppConsole.swift */,
 				1C4A31EF1C9505FD00D58787 /* ConsoleRouter.swift */,
 				1C3EB37B1C95873C00AA2D0F /* TypeHandler.swift */,
 				1C3EB3D71C95888E00AA2D0F /* Extensions.swift */,
@@ -332,7 +332,7 @@
 				1CEC8B731C9501D900CFB4D2 /* ViewController.swift in Sources */,
 				1C4A31F01C9505FD00D58787 /* ConsoleRouter.swift in Sources */,
 				1CEC8B711C9501D900CFB4D2 /* AppDelegate.swift in Sources */,
-				1C3EB37A1C95868300AA2D0F /* Console.swift in Sources */,
+				1C3EB37A1C95868300AA2D0F /* AppConsole.swift in Sources */,
 				1C3EB37C1C95873C00AA2D0F /* TypeHandler.swift in Sources */,
 				1C3EB3E21C95A52500AA2D0F /* WTest.swift in Sources */,
 				1C3EB3E01C95A44C00AA2D0F /* TypeHandlerTests.swift in Sources */,
@@ -347,7 +347,7 @@
 				1C3EB3DE1C95A3E300AA2D0F /* ConsoleRouter.swift in Sources */,
 				1C3EB37E1C9587D500AA2D0F /* TypeHandlerTests.swift in Sources */,
 				1CEC8B861C9501D900CFB4D2 /* ConsoleAppTests.swift in Sources */,
-				1C3EB3DF1C95A3E600AA2D0F /* Console.swift in Sources */,
+				1C3EB3DF1C95A3E600AA2D0F /* AppConsole.swift in Sources */,
 				1C3EB3D41C95882B00AA2D0F /* XCTest.swift in Sources */,
 				1C3EB3DC1C95A3DF00AA2D0F /* Extensions.swift in Sources */,
 				1C3EB3DD1C95A3E100AA2D0F /* TypeHandler.swift in Sources */,
