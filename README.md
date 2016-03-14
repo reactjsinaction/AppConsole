@@ -1,16 +1,16 @@
-Console
-=======
+AppConsole
+==========
 
-  * iOS REPL with [Swifter.jl](https://github.com/wookay/Swifter.jl) + Console
+  * iOS REPL with [Swifter.jl](https://github.com/wookay/Swifter.jl) + AppConsole
 
-  [![Build Status](https://api.travis-ci.org/wookay/Console.svg?branch=master)](https://travis-ci.org/wookay/Console)
+  [![Build Status](https://api.travis-ci.org/wookay/AppConsole.svg?branch=master)](https://travis-ci.org/wookay/AppConsole)
 
 
 # Run server on your iOS app
 ```swift
 class ViewController: UIViewController {
     override func viewDidLoad() {
-        Console(initial: self).run()
+        AppConsole(initial: self).run()
     }
 }
 ```
@@ -35,6 +35,5 @@ vc = initial(simulator)
 # Pod
 * Podfile
 ```
-use_frameworks!
-pod 'Console', :git => 'https://github.com/wookay/Console.git'
+pod 'AppConsole'
 ```
