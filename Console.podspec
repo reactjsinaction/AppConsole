@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "Console"
-  s.version      = "0.0.1"
+  s.version      = "0.0.2"
   s.summary      = "Console for Swifter.jl"
 
   # This description is used to generate tags and improve search results.
@@ -80,7 +80,7 @@ Pod::Spec.new do |s|
   #
 
   s.source       = { :git => "https://github.com/wookay/Console.git",
-                     :tag => "v#{s.version}" 
+                     :tag => "v#{s.version}"
                    }
 
   # ――― Source Code ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
@@ -91,7 +91,7 @@ Pod::Spec.new do |s|
   #  Not including the public_header_files will make all headers public.
   #
 
-  s.source_files  = "Console"
+  s.source_files  = 'Console/**/*.swift'
   #s.exclude_files = "Classes/Exclude"
 
   # s.public_header_files = "Classes/**/*.h"

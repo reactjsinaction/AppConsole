@@ -17,6 +17,11 @@ class ViewController: UIViewController {
 
 
 # REPL client with Julia
+ * Install Julia http://julialang.org/
+```
+julia> Pkg.clone("https://github.com/wookay/Swifter.jl.git")
+```
+
 ```julia
 using Swifter
 
@@ -24,4 +29,12 @@ simulator = App("http://localhost:8080")
 vc = initial(simulator)
 
 @query vc.view.backgroundColor = UIColor.greenColor()
+```
+
+
+# Pod
+* Podfile
+```
+use_frameworks!
+pod 'Console', :git => 'https://github.com/wookay/Console.git'
 ```
