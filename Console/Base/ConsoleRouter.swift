@@ -15,8 +15,9 @@ class ConsoleRouter {
     let type_handler = TypeHandler()
     var env = [String: AnyObject]()
     
-    enum FailType {
-        case failed
+    enum ResultType {
+        case Failed
+        case Nil
     }
     
     
@@ -36,20 +37,38 @@ class ConsoleRouter {
         server["/query"] = { req in
             if let type = req.query["type"], lhs = req.query["lhs"] {
                 switch type {
-                case "Property":
-                    if let prop = self.chain_getter(lhs) {
-                        return self.result(prop)
-                    } else {
-                        return self.result(0)
-                    }
-                case "Assign":
-                    if let rhs = req.query["rhs"] {
-                        if let obj = self.chain(nil, self.json_parse(lhs), full: false),
-                            let val = self.chain_getter(rhs) {
-                                self.chain_setter(obj, lhs: lhs, val: val)
-                                return self.result(val)
+                case "Getter":
+                    let (success,object) = self.chain_getter(lhs)
+                    if success {
+                        if let obj = object {
+                            if let val = obj as? ValueType {
+                                return self.result(val.value)
+                            } else {
+                                return self.result(obj)
+                            }
                         } else {
-                            return self.result(.failed)
+                            return self.result(.Nil)
+                        }
+                    } else {
+                        return self.result(.Failed)
+                    }
+                case "Setter":
+                    if let rhs = req.query["rhs"] {
+                        let (success, left) = self.chain(nil, self.json_parse(lhs), full: false)
+                        let (_, value) = self.chain_getter(rhs)
+                        if success {
+                            if let obj = left {
+                                self.chain_setter(obj, lhs: lhs, value: value)
+                                if let val = value {
+                                    return self.result(val)
+                                } else {
+                                    return self.result(.Nil)
+                                }
+                            } else {
+                                return self.result(.Nil)
+                            }
+                        } else {
+                            return self.result(.Failed)
                         }
                     }
                 default:
@@ -61,10 +80,12 @@ class ConsoleRouter {
     }
 
     // MARK: ConsoleRouter - result
-    func result(type: FailType) -> HttpResponse {
+    func result(type: ResultType) -> HttpResponse {
         switch type {
-        case .failed:
-            return .OK(.Json(["failed": String(type)]))
+        case .Failed:
+            return .OK(.Json(["symbol": String(type)]))
+        case .Nil:
+            return .OK(.Json(["symbol": "nil"]))
         }
     }
     
@@ -92,79 +113,87 @@ class ConsoleRouter {
 
 extension ConsoleRouter {
     
-    func chain_getter(lhs: String) -> AnyObject? {
-        let vec: [String] = json_parse(lhs)
-        let object = chain(nil, vec, full: false)
-        if vec.count == 1 {
-            return object
-        } else {
-            if let obj = object {
-                if let name = vec.last {
-                    let method = var_or_method(name)
-                    if obj.respondsToSelector(Selector(method)) {
-                        return type_handler.handle(obj, method)
-                    }
-                }
-            }
+    func chain_getter(lhs: String) -> (Bool,AnyObject?) {
+        let vec: [TypePair] = json_parse(lhs)
+        return chain(nil, vec, full: true)
+    }
+
+    func chain_setter(obj: AnyObject, lhs: String, value: AnyObject?) -> AnyObject? {
+        let vec: [TypePair] = json_parse(lhs)
+        if let pair = vec.last {
+            type_handler.setter_handle(obj, pair.second as! String, value: value)
         }
         return nil
     }
-
-    func chain_setter(obj: AnyObject, lhs: String, val: AnyObject?) -> AnyObject? {
-        let vec: [String] = json_parse(lhs)
-        if let name = vec.last {
-            let method = "set" + name.uppercase_first() + ":"
-            let sel = Selector(method)
-            let responds = obj.respondsToSelector(sel)
-            
-            if responds {
-                dispatch_async(dispatch_get_main_queue(), {
-                    (obj as AnyObject).performSelector(sel, withObject: val)
-                })
+    
+    func typepair_chain(pair: TypePair) -> (Bool, AnyObject?) {
+        switch pair.first {
+        case "string", "int", "float":
+            return (false, pair.second)
+        case "address":
+            return (false, from_env(pair.second as! String))
+        case "symbol":
+            switch pair.second as! String {
+            case "nil":
+                return (false, nil)
+            default:
+                return (true, nil)
             }
+        default:
+            return (true, nil)
         }
-        return nil
     }
 
-    func chain(object: AnyObject?, _ vec: [String], full: Bool) -> AnyObject? {
+    func chain(object: AnyObject?, _ vec: [TypePair], full: Bool) -> (Bool, AnyObject?) {
         if let obj = object {
             let cnt = vec.count
-            for (idx,method) in vec.enumerate() {
+            for (idx,pair) in vec.enumerate() {
                 if !full && idx == cnt-1 {
                     continue
                 }
-                let sel = Selector(self.var_or_method(method))
-                let responds = obj.respondsToSelector(sel)
-                if responds {
-                    let inst = obj.performSelector(sel)
-                    if "Unmanaged<AnyObject>" == typeof(inst) {
-                        return chain(convert(inst), vec.slice_to_end(1), full: full)
+                let (cont, val) = typepair_chain(pair)
+                if cont {
+                    let (success,ob) = type_handler.getter_handle(obj, self.var_or_method(pair))
+                    if success {
+                        if let o = ob {
+                            return chain(o, vec.slice_to_end(1), full: full)
+                        } else {
+                            return (true, nil)
+                        }
                     } else {
-                        return chain(inst as? AnyObject, vec.slice_to_end(1), full: full)
+                        return (false, obj)
                     }
                 } else {
-                    return nil
+                    return chain(val, vec.slice_to_end(1), full: full)
                 }
             }
-            return obj
+            return (true, obj)
         } else {
-            if let one = vec.first {
-                if one.hasPrefix("0x") {
-                    if let o = from_env(one) {
-                        return chain(o, vec.slice_to_end(1), full: full)
+            if let pair = vec.first {
+                let (cont, val) = typepair_chain(pair)
+                if cont {
+                    if let one = pair.second as? String {
+                        if let c: AnyClass = NSClassFromString(one) {
+                            return chain(c, vec.slice_to_end(1), full: full)
+                        }
                     }
+                    return (true, nil)
                 } else {
-                    if let c: AnyClass = NSClassFromString(one) {
-                        return chain(c, vec.slice_to_end(1), full: full)
-                    }
+                    return chain(val, vec.slice_to_end(1), full: full)
                 }
+            } else {
+                return (false, nil)
             }
-            return nil
         }
     }
 }
 
 
+
+struct TypePair {
+    var first: String
+    var second: AnyObject
+}
 
 // MARK: ConsoleRouter - utils
 
@@ -184,7 +213,8 @@ extension ConsoleRouter {
         return ["address": address]
     }
     
-    func var_or_method(str: String) -> String {
+    func var_or_method(pair: TypePair) -> String {
+        let str = pair.second as! String
         if str.hasSuffix("()") {
             let method = str.slice(0, to: str.characters.count - 2)
             return method
@@ -193,16 +223,28 @@ extension ConsoleRouter {
         }
     }
 
-    func json_parse(str: String?) -> [String] {
+    func typepairs(array: [[String: AnyObject]]) -> [TypePair] {
+        var list = [TypePair]()
+        for dict in array {
+            if let k = dict["first"], let v = dict["second"] {
+                list.append(TypePair(first: k as! String, second: v))
+            }
+        }
+        return list
+    }
+    
+    func json_parse(str: String?) -> [TypePair] {
         if let s = str {
             do {
                 let json = try NSJSONSerialization.JSONObjectWithData(s.dataUsingEncoding(NSUTF8StringEncoding)!, options: NSJSONReadingOptions())
-                return json as! [String]
+                if let j = json as? [[String: AnyObject]] {
+                    return typepairs(j)
+                }
             } catch {
             }
-            return [s]
+            return [TypePair(first: "raw", second: s)]
         } else {
-            return [String]()
+            return [TypePair]()
         }
     }
 }

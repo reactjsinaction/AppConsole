@@ -73,6 +73,20 @@ func return_types(obj: AnyObject, _ name: String) -> String {
     }
 }
 
+func argument_types(obj: AnyObject, _ name: String, nth: Int) -> String {
+    let m: Method = class_getInstanceMethod(object_getClass(obj), Selector(name))
+    let argumentType = method_copyArgumentType(m, UInt32(nth))
+    defer {
+        argumentType.destroy()
+    }
+    if let str = String.fromCString(argumentType) {
+        return str
+    } else {
+        return ""
+    }
+}
+
+
 
 
 // MARK: UnitTest
