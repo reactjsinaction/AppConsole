@@ -19,7 +19,8 @@ class ViewController: UIViewController {
 # REPL client with Julia
  * Install Julia http://julialang.org/
 ```
-julia> Pkg.clone("https://github.com/wookay/Swifter.jl.git")
+julia> Pkg.add("Swifter")
+INFO: Installing Swifter v0.0.1
 ```
 
 ```julia
@@ -32,7 +33,7 @@ vc = initial(simulator)
 ```
 
 
-# Pod
+# CocoaPods
 * Podfile
 ```
 pod 'AppConsole'
