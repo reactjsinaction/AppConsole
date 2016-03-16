@@ -182,7 +182,44 @@ class TypeHandler {
             }
         })
     }
-
+    
+    // MARK: TypeHandler - typepair_function
+    func typepair_function(name: String, _ args: [Float]) -> (Bool, AnyObject?) {
+        switch name {
+            
+        case "CGRectMake":
+            let rect = CGRectMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
+            return (false, NSStringFromCGRect(rect))
+            
+        default:
+            break
+        }
+        return (true, nil)
+    }
+    
+    // MARK: TypeHandler - typepair_constructor
+    func typepair_constructor(name: String, _ args: [[AnyObject]]) -> (Bool, AnyObject?) {
+        var dict = [String: AnyObject?]()
+        for arg: [AnyObject] in args {
+            if let k = arg.first as? String, let v = arg.last {
+                dict[k] = v
+            }
+        }
+        
+        switch name {
+            
+        case "UIFont":
+            if let name = dict["name"] as? String,
+                let size = dict["size"] as? Float {
+                return (false, UIFont(name: name, size: CGFloat(size)))
+            }
+            
+        default:
+            break
+        }
+        return (true, nil)
+    }
+    
     func extractMethodFrom<U>(owner: AnyObject, _ selector: Selector, _ F: U.Type) -> U {
         let method: Method
         if owner is AnyClass {
@@ -193,6 +230,7 @@ class TypeHandler {
         let implementation: IMP = method_getImplementation(method)
         return unsafeBitCast(implementation, F.self)
     }
+
 }
 
 

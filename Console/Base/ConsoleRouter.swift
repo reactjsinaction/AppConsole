@@ -139,9 +139,28 @@ extension ConsoleRouter {
             default:
                 return (true, nil)
             }
+        case "call":
+            return typepair_callargs(pair.second)
         default:
             return (true, nil)
         }
+    }
+
+    func typepair_callargs(info: AnyObject) -> (Bool, AnyObject?) {
+        if let nameargs = info as? [AnyObject] {
+            if let name = nameargs.first as? String,
+                let args = nameargs.last {
+                switch args {
+                case is [Float]:
+                    return type_handler.typepair_function(name, args as! [Float])
+                case is [AnyObject]:
+                    return type_handler.typepair_constructor(name, args as! [[AnyObject]])
+                default:
+                    break
+                }
+            }
+        }
+        return (true, nil)
     }
 
     func chain(object: AnyObject?, _ vec: [TypePair], full: Bool) -> (Bool, AnyObject?) {
