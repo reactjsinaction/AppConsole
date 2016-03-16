@@ -133,10 +133,14 @@ extension ConsoleRouter {
         case "address":
             return (false, from_env(pair.second as! String))
         case "symbol":
-            switch pair.second as! String {
-            case "nil":
-                return (false, nil)
-            default:
+            if let str = pair.second as? String {
+                switch str {
+                case "nil":
+                    return (false, nil)
+                default:
+                    return (true, nil)
+                }
+            } else {
                 return (true, nil)
             }
         case "call":
@@ -233,12 +237,15 @@ extension ConsoleRouter {
     }
     
     func var_or_method(pair: TypePair) -> String {
-        let str = pair.second as! String
-        if str.hasSuffix("()") {
-            let method = str.slice(0, to: str.characters.count - 2)
-            return method
+        if let str = pair.second as? String {
+            if str.hasSuffix("()") {
+                let method = str.slice(0, to: str.characters.count - 2)
+                return method
+            } else {
+                return str
+            }
         } else {
-            return str
+            return ""
         }
     }
 
