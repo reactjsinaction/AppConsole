@@ -4,7 +4,7 @@ AppConsole
   * iOS REPL with [Swifter.jl](https://github.com/wookay/Swifter.jl) + AppConsole
 
   [![Build Status](https://api.travis-ci.org/wookay/AppConsole.svg?branch=master)](https://travis-ci.org/wookay/AppConsole)
-  ![Cocoapods Version](https://img.shields.io/cocoapods/v/AppConsole.svg?style=flat) 
+  [![Cocoapods Version](https://img.shields.io/cocoapods/v/AppConsole.svg?style=flat)](https://cocoapods.org/pods/AppConsole)
 
 
 # Run server on your iOS app
