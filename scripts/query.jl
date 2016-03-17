@@ -1,7 +1,6 @@
 using Swifter
 
-simulator = App("http://localhost:8080")
-vc = initial(simulator)
+vc = initial("http://localhost:8080")
 
 @query vc.view.backgroundColor = UIColor.greenColor()
 
