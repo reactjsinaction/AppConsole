@@ -38,6 +38,6 @@ public class AppConsole {
                 }
             }
         }
-        return ""
+        return "localhost"
     }
 }

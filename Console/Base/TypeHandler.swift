@@ -10,6 +10,7 @@ import UIKit
 
 
 
+
 class TypeHandler {
     
     // MARK: TypeHandler - getter_handle
@@ -34,12 +35,20 @@ class TypeHandler {
             } else {
                 return (true, nil)
             }
+        case "B": // B Bool
+            typealias F = @convention(c) (AnyObject, Selector)-> Bool
+            let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
+            return (true, ValueType(type: type, value: value))
         case "d": // d Double
             typealias F = @convention(c) (AnyObject, Selector)-> Double
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
             return (true, ValueType(type: type, value: value))
-        case "q": // q CLongLong
+        case "i", "q": // i int, q CLongLong
             typealias F = @convention(c) (AnyObject, Selector)-> Int
+            let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
+            return (true, ValueType(type: type, value: value))
+        case "f": // f float
+            typealias F = @convention(c) (AnyObject, Selector)-> Float
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
             return (true, ValueType(type: type, value: value))
         case "Q": // Q CUnsignedLongLong
@@ -149,48 +158,133 @@ class TypeHandler {
         if type != "@" && nil == value {
             return
         }
+        
         dispatch_async(dispatch_get_main_queue(), {
-            switch type {
-            case "@":
-                obj.performSelector(sel, withObject: value)
-            case "d":
-                typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Double)
-            case "q":
-                typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Int)
-            case "Q":
-                typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! UInt)
-            case "{CGPoint=dd}":
-                typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(value as! String))
-            case "{CGSize=dd}":
-                typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(value as! String))
-            case "{CGRect={CGPoint=dd}{CGSize=dd}}":
-                typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(value as! String))
-            case "{CGAffineTransform=dddddd}":
-                typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(value as! String))
-            case "{CATransform3D=dddddddddddddddd}":
-                typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(value as! String))
-            case let val:
-                Log.info("val", val)
+            
+            if let val: ValueType = value as? ValueType {
+                switch type {
+                case "@":
+                    break
+                case "B":
+                    typealias F = @convention(c) (AnyObject, Selector, Bool)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Bool)
+                case "d":
+                    typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Double)
+                case "i", "q":
+                    typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Int)
+                case "f":
+                    typealias F = @convention(c) (AnyObject, Selector, Float)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Float)
+                case "Q":
+                    typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! UInt)
+                case "{CGPoint=dd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGPoint)
+                case "{CGSize=dd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGSize)
+                case "{CGRect={CGPoint=dd}{CGSize=dd}}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGRect)
+                case "{CGAffineTransform=dddddd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGAffineTransform)
+                case "{CATransform3D=dddddddddddddddd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CATransform3D)
+                case let val:
+                    Log.info("val", val)
+                }
+            } else {
+                switch type {
+                case "@":
+                    obj.performSelector(sel, withObject: value)
+                case "B":
+                    typealias F = @convention(c) (AnyObject, Selector, Bool)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Bool)
+                case "d":
+                    typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Double)
+                case "i", "q":
+                    typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Int)
+                case "f":
+                    typealias F = @convention(c) (AnyObject, Selector, Float)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Float)
+                case "Q":
+                    typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! UInt)
+                case "{CGPoint=dd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(value as! String))
+                case "{CGSize=dd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(value as! String))
+                case "{CGRect={CGPoint=dd}{CGSize=dd}}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(value as! String))
+                case "{CGAffineTransform=dddddd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(value as! String))
+                case "{CATransform3D=dddddddddddddddd}":
+                    typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(value as! String))
+                case let val:
+                    Log.info("val", val)
+                }
             }
         })
+    }
+    
+    // MARK: TypeHandler - typepair_constant
+    func typepair_constant(name: String) -> (Bool, AnyObject?) {
+        switch name {
+        case "CGPointZero":
+            return (true, NSStringFromCGPoint(CGPointZero))
+        case "CGSizeZero":
+            return (true, NSStringFromCGSize(CGSizeZero))
+        case "CGRectZero":
+            return (true, NSStringFromCGRect(CGRectZero))
+        case "CGAffineTransformIdentity":
+            return (true, NSStringFromCGAffineTransform(CGAffineTransformIdentity))
+        case "UIEdgeInsetsZero":
+            return (true, NSStringFromUIEdgeInsets(UIEdgeInsetsZero))
+        case "UIOffsetZero":
+            return (true, NSStringFromUIOffset(UIOffsetZero))
+        default:
+            break
+        }
+        return (false, nil)
     }
     
     // MARK: TypeHandler - typepair_function
     func typepair_function(name: String, _ args: [Float]) -> (Bool, AnyObject?) {
         switch name {
-            
+        case "CGPointMake":
+            let point = CGPointMake(CGFloat(args[0]), CGFloat(args[1]))
+            return (false, NSStringFromCGPoint(point))
+        case "CGSizeMake":
+            let size = CGSizeMake(CGFloat(args[0]), CGFloat(args[1]))
+            return (false, NSStringFromCGSize(size))
+        case "CGVectorMake":
+            let vector = CGVectorMake(CGFloat(args[0]), CGFloat(args[1]))
+            return (false, NSStringFromCGVector(vector))
         case "CGRectMake":
             let rect = CGRectMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
             return (false, NSStringFromCGRect(rect))
-            
+        case "CGAffineTransformMake":
+            let transform = CGAffineTransformMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]), CGFloat(args[4]), CGFloat(args[5]))
+            return (false, NSStringFromCGAffineTransform(transform))
+        case "UIEdgeInsetsMake":
+            let insets = UIEdgeInsetsMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
+            return (false, NSStringFromUIEdgeInsets(insets))
+        case "UIOffsetMake":
+            let offset = UIOffsetMake(CGFloat(args[0]), CGFloat(args[1]))
+            return (false, NSStringFromUIOffset(offset))
+
         default:
             break
         }
@@ -215,6 +309,7 @@ class TypeHandler {
             }
             
         default:
+            Log.info("constructor", dict)
             break
         }
         return (true, nil)

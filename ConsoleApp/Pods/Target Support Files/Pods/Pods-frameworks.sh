@@ -84,10 +84,12 @@ strip_invalid_archs() {
 
 
 if [[ "$CONFIGURATION" == "Debug" ]]; then
+  install_framework "Pods/MessagePack.framework"
   install_framework "Pods/NetUtils.framework"
   install_framework "Pods/Swifter.framework"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
+  install_framework "Pods/MessagePack.framework"
   install_framework "Pods/NetUtils.framework"
   install_framework "Pods/Swifter.framework"
 fi

@@ -6,7 +6,7 @@
 //  Copyright © 2016 factorcat. All rights reserved.
 //
 
-import Foundation
+import UIKit
 import Swifter
 
 
@@ -35,7 +35,14 @@ class ConsoleRouter {
         }
         
         server["/query"] = { req in
-            if let type = req.query["type"], lhs = req.query["lhs"] {
+            var query = [String: String]()
+            do {
+                let data = NSData(bytes: req.body, length: req.body.count)
+                query = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments) as! [String : String]
+            } catch {
+            }
+            
+            if let type = query["type"], lhs = query["lhs"] {
                 switch type {
                 case "Getter":
                     let (success,object) = self.chain_getter(lhs)
@@ -53,14 +60,18 @@ class ConsoleRouter {
                         return self.result(.Failed)
                     }
                 case "Setter":
-                    if let rhs = req.query["rhs"] {
+                    if let rhs = query["rhs"] {
                         let (success, left) = self.chain(nil, self.json_parse(lhs), full: false)
                         let (_, value) = self.chain_getter(rhs)
                         if success {
                             if let obj = left {
                                 self.chain_setter(obj, lhs: lhs, value: value)
-                                if let val = value {
-                                    return self.result(val)
+                                if let v = value {
+                                    if let val = value as? ValueType {
+                                        return self.result(val.value)
+                                    } else {
+                                        return self.result(v)
+                                    }
                                 } else {
                                     return self.result(.Nil)
                                 }
@@ -85,7 +96,7 @@ class ConsoleRouter {
         case .Failed:
             return .OK(.Json(["symbol": String(type)]))
         case .Nil:
-            return .OK(.Json(["symbol": "nil"]))
+            return .OK(.Json(["symbol": "nothing"]))
         }
     }
     
@@ -95,10 +106,15 @@ class ConsoleRouter {
             return .OK(.Json(["result": value]))
         case is String:
             return .OK(.Json(["result": value]))
-        case is [String: String]:
-            return .OK(.Json(["result": value]))
-        case is [String]:
-            return .OK(.Json(["result": value]))
+        case is [String: AnyObject]:
+            var d = [String: String]()
+            for (k,v) in (value as! [String: AnyObject]) {
+                d[k] = String(v)
+            }
+            return .OK(.Json(["result": d]))
+        case is [AnyObject]:
+            let a = (value as! [AnyObject]).map { x in String(x) }
+            return .OK(.Json(["result": a]))
         default:
             return .OK(.Json(["result": String(value)]))
         }
@@ -128,8 +144,14 @@ extension ConsoleRouter {
     
     func typepair_chain(pair: TypePair) -> (Bool, AnyObject?) {
         switch pair.first {
-        case "string", "int", "float":
+        case "string":
             return (false, pair.second)
+        case "int":
+            return (false, ValueType(type: "q", value: pair.second))
+        case "float":
+            return (false, ValueType(type: "f", value: pair.second))
+        case "bool":
+            return (false, ValueType(type: "B", value: pair.second))
         case "address":
             return (false, from_env(pair.second as! String))
         case "symbol":
@@ -187,6 +209,7 @@ extension ConsoleRouter {
                         return (false, obj)
                     }
                 } else {
+                    Log.info("chain", val, vec, full)
                     return chain(val, vec.slice_to_end(1), full: full)
                 }
             }
@@ -198,6 +221,8 @@ extension ConsoleRouter {
                     if let one = pair.second as? String {
                         if let c: AnyClass = NSClassFromString(one) {
                             return chain(c, vec.slice_to_end(1), full: full)
+                        } else {
+                            return type_handler.typepair_constant(one)
                         }
                     }
                     return (true, nil)

@@ -217,7 +217,7 @@ class UnitTest {
 // MARK: Logger
 
 class Logger {
-    func info(args: Any..., file: StaticString = __FILE__, function: String = __FUNCTION__, line: Int = __LINE__ ) {
+    func info(args: Any..., file: StaticString = #file, function: String = #function, line: UInt = #line) {
         let filename = (String(file) as NSString).lastPathComponent
         
         var str = ""
