@@ -180,7 +180,9 @@ extension ConsoleRouter {
                 case is [Float]:
                     return type_handler.typepair_function(name, args as! [Float])
                 case is [AnyObject]:
-                    return type_handler.typepair_constructor(name, args as! [[AnyObject]])
+                    if let a = args as? [[AnyObject]] {
+                        return type_handler.typepair_constructor(name, a)
+                    }
                 default:
                     break
                 }
