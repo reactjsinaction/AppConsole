@@ -48,11 +48,7 @@ class ConsoleRouter {
                     let (success,object) = self.chain_getter(lhs)
                     if success {
                         if let obj = object {
-                            if let val = obj as? ValueType {
-                                return self.result(val.value)
-                            } else {
-                                return self.result(obj)
-                            }
+                            return self.result(obj)
                         } else {
                             return self.result(.Nil)
                         }
@@ -66,12 +62,8 @@ class ConsoleRouter {
                         if success {
                             if let obj = left {
                                 self.chain_setter(obj, lhs: lhs, value: value)
-                                if let v = value {
-                                    if let val = value as? ValueType {
-                                        return self.result(val.value)
-                                    } else {
-                                        return self.result(v)
-                                    }
+                                if let val = value {
+                                    return self.result(val)
                                 } else {
                                     return self.result(.Nil)
                                 }
@@ -86,7 +78,7 @@ class ConsoleRouter {
                     break
                 }
             }
-            return self.result(1)
+            return self.result(.Failed)
         }
     }
 
@@ -102,10 +94,16 @@ class ConsoleRouter {
     
     func result(value: AnyObject) -> HttpResponse {
         switch value {
+        case is ValueType:
+            if let val = value as? ValueType {
+                return .OK(.Json(["result": val.value]))
+            }
         case is NSNumber:
             if let num = value as? NSNumber {
                 if num.stringValue.containsString("e+") {
                     return .OK(.Json(["result": String(num)]))
+                } else {
+                    return .OK(.Json(["result": num.floatValue]))
                 }
             }
         case is Int:

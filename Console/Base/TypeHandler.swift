@@ -20,7 +20,6 @@ class TypeHandler {
         }
         
         let sel = Selector(name)
-        
         guard obj.respondsToSelector(sel) else {
             return (false, nil)
         }
@@ -56,15 +55,15 @@ class TypeHandler {
             typealias F = @convention(c) (AnyObject, Selector)-> UInt
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
             return (true, ValueType(type: type, value: value))
-        case "{CGPoint=dd}":
+        case "{CGPoint=dd}", "{CGPoint=ff}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGPoint
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
             return (true, ValueType(type: type, value: NSStringFromCGPoint(value)))
-        case "{CGSize=dd}":
+        case "{CGSize=dd}", "{CGSize=ff}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGSize
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
             return (true, ValueType(type: type, value: NSStringFromCGSize(value)))
-        case "{CGRect={CGPoint=dd}{CGSize=dd}}":
+        case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGRect
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
             return (true, ValueType(type: type, value: NSStringFromCGRect(value)))
@@ -85,19 +84,29 @@ class TypeHandler {
     func getter_valuetype(val: ValueType, _ name: String) -> (Bool, AnyObject?) {
         let value = val.value as! String
         switch val.type {
-        case "{CGPoint=dd}":
+        case "{CGPoint=dd}", "{CGPoint=ff}":
             let point = CGPointFromString(value)
             switch name {
             case "x": return (true, point.x)
             case "y": return (true, point.y)
             default: return (false, nil)
             }
-        case "{CGSize=dd}":
+        case "{CGSize=dd}", "{CGSize=ff}":
             let size = CGSizeFromString(value)
             switch name {
             case "width": return (true, size.width)
             case "height": return (true, size.height)
             default: return (false, nil)
+            }
+        case "{CGRect={CGPoint=ff}{CGSize=ff}}":
+            let rect = CGRectFromString(value)
+            switch name {
+            case "origin":
+                return (true, ValueType(type: "{CGPoint=ff}", value: NSStringFromCGPoint(rect.origin)))
+            case "size":
+                return (true, ValueType(type: "{CGSize=ff}", value: NSStringFromCGSize(rect.size)))
+            default:
+                return (false, nil)
             }
         case "{CGRect={CGPoint=dd}{CGSize=dd}}":
             let rect = CGRectFromString(value)
@@ -181,13 +190,13 @@ class TypeHandler {
                 case "Q":
                     typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! UInt)
-                case "{CGPoint=dd}":
+                case "{CGPoint=dd}", "{CGPoint=ff}":
                     typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGPoint)
-                case "{CGSize=dd}":
+                case "{CGSize=dd}", "{CGSize=ff}":
                     typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGSize)
-                case "{CGRect={CGPoint=dd}{CGSize=dd}}":
+                case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
                     typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGRect)
                 case "{CGAffineTransform=dddddd}":
@@ -218,13 +227,13 @@ class TypeHandler {
                 case "Q":
                     typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! UInt)
-                case "{CGPoint=dd}":
+                case "{CGPoint=dd}", "{CGPoint=ff}":
                     typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(value as! String))
-                case "{CGSize=dd}":
+                case "{CGSize=dd}", "{CGSize=ff}":
                     typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(value as! String))
-                case "{CGRect={CGPoint=dd}{CGSize=dd}}":
+                case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
                     typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
                     self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(value as! String))
                 case "{CGAffineTransform=dddddd}":
