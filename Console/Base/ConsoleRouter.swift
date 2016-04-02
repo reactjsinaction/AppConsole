@@ -102,6 +102,12 @@ class ConsoleRouter {
     
     func result(value: AnyObject) -> HttpResponse {
         switch value {
+        case is NSNumber:
+            if let num = value as? NSNumber {
+                if num.stringValue.containsString("e+") {
+                    return .OK(.Json(["result": String(num)]))
+                }
+            }
         case is Int:
             return .OK(.Json(["result": value]))
         case is String:
@@ -116,8 +122,9 @@ class ConsoleRouter {
             let a = (value as! [AnyObject]).map { x in String(x) }
             return .OK(.Json(["result": a]))
         default:
-            return .OK(.Json(["result": String(value)]))
+            break
         }
+        return .OK(.Json(["result": String(value)]))
     }
 }
 
@@ -200,18 +207,32 @@ extension ConsoleRouter {
                 }
                 let (cont, val) = typepair_chain(pair)
                 if cont {
-                    let (success,ob) = type_handler.getter_handle(obj, self.var_or_method(pair))
-                    if success {
-                        if let o = ob {
-                            return chain(o, vec.slice_to_end(1), full: full)
-                        } else {
-                            return (true, nil)
+                    if let method = self.var_or_method(pair) {
+                        switch method {
+                        case is String:
+                            let (success,ob) = type_handler.getter_handle(obj, method as! String)
+                            if success {
+                                if let o = ob {
+                                    return chain(o, vec.slice_to_end(1), full: full)
+                                } else {
+                                    return (true, nil)
+                                }
+                            } else {
+                                return (false, obj)
+                            }
+                        case is Int:
+                            if let arr = obj as? NSArray,
+                                let idx = method as? Int {
+                                if arr.count > idx {
+                                    return chain(arr[idx], vec.slice_to_end(1), full: full)
+                                }
+                            }
+                        default:
+                            break
                         }
-                    } else {
-                        return (false, obj)
                     }
+                    return (false, obj)
                 } else {
-                    Log.info("chain", val, vec, full)
                     return chain(val, vec.slice_to_end(1), full: full)
                 }
             }
@@ -263,17 +284,25 @@ extension ConsoleRouter {
         return ["address": address]
     }
     
-    func var_or_method(pair: TypePair) -> String {
-        if let str = pair.second as? String {
-            if str.hasSuffix("()") {
-                let method = str.slice(0, to: str.characters.count - 2)
-                return method
-            } else {
-                return str
+    func var_or_method(pair: TypePair) -> AnyObject? {
+        switch pair.second {
+        case is String:
+            if let str = pair.second as? String {
+                if str.hasSuffix("()") {
+                    let method = str.slice(0, to: str.characters.count - 2)
+                    return method
+                } else {
+                    return str
+                }
             }
-        } else {
-            return ""
+        case is Int:
+            if let num = pair.second as? Int {
+                return num
+            }
+        default:
+            break
         }
+        return nil
     }
 
     func typepairs(array: [[String: AnyObject]]) -> [TypePair] {
@@ -298,21 +327,6 @@ extension ConsoleRouter {
             return [TypePair(first: "raw", second: s)]
         } else {
             return [TypePair]()
-        }
-    }
-}
-
-
-// MARK: HttpRequest - query
-
-extension HttpRequest {
-    var query: Dictionary<String, String> {
-        get {
-            var dict = Dictionary<String, String>()
-            for (k,v) in queryParams {
-                dict[k] = v
-            }
-            return dict
         }
     }
 }

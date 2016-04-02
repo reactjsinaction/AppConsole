@@ -20,6 +20,7 @@ class TypeHandler {
         }
         
         let sel = Selector(name)
+        
         guard obj.respondsToSelector(sel) else {
             return (false, nil)
         }

@@ -7,4 +7,5 @@ vc = initial("http://localhost:8080")
 @query vc.tableView.frame
 @query vc.tableView.subviews
 
-@query vc.title = "hello $(1+2)"
+title = "Hello world"
+@query vc.title = title
