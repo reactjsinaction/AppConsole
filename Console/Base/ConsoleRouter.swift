@@ -50,10 +50,10 @@ class ConsoleRouter {
                         if let obj = object {
                             return self.result(obj)
                         } else {
-                            return self.result(.Nil)
+                            return self.result_symbol(.Nil)
                         }
                     } else {
-                        return self.result(.Failed)
+                        return self.result_symbol(.Failed)
                     }
                 case "Setter":
                     if let rhs = query["rhs"] {
@@ -65,64 +65,77 @@ class ConsoleRouter {
                                 if let val = value {
                                     return self.result(val)
                                 } else {
-                                    return self.result(.Nil)
+                                    return self.result_symbol(.Nil)
                                 }
                             } else {
-                                return self.result(.Nil)
+                                return self.result_symbol(.Nil)
                             }
                         } else {
-                            return self.result(.Failed)
+                            return self.result_symbol(.Failed)
                         }
                     }
                 default:
                     break
                 }
             }
-            return self.result(.Failed)
+            return self.result_symbol(.Failed)
         }
     }
 
     // MARK: ConsoleRouter - result
-    func result(type: ResultType) -> HttpResponse {
-        switch type {
-        case .Failed:
-            return .OK(.Json(["symbol": String(type)]))
-        case .Nil:
-            return .OK(.Json(["symbol": "nothing"]))
-        }
-    }
-    
     func result(value: AnyObject) -> HttpResponse {
         switch value {
         case is ValueType:
             if let val = value as? ValueType {
-                return .OK(.Json(["result": val.value]))
-            }
-        case is NSNumber:
-            if let num = value as? NSNumber {
-                if num.stringValue.containsString("e+") {
-                    return .OK(.Json(["result": String(num)]))
-                } else {
-                    return .OK(.Json(["result": num.floatValue]))
+                switch val.type {
+                case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
+                    return result_string(val.value)
+                default:
+                    if let num = val.value as? NSNumber {
+                        if num.stringValue.containsString("e+") {
+                            return result_any(String(num))
+                        } else {
+                            return result_any(num.floatValue)
+                        }
+                    } else {
+                        return result_any(val.value)
+                    }
                 }
             }
         case is Int:
-            return .OK(.Json(["result": value]))
+            return result_any(value)
         case is String:
-            return .OK(.Json(["result": value]))
+            return result_string(value)
         case is [String: AnyObject]:
             var d = [String: String]()
             for (k,v) in (value as! [String: AnyObject]) {
                 d[k] = String(v)
             }
-            return .OK(.Json(["result": d]))
+            return result_any(d)
         case is [AnyObject]:
             let a = (value as! [AnyObject]).map { x in String(x) }
-            return .OK(.Json(["result": a]))
+            return result_any(a)
         default:
             break
         }
-        return .OK(.Json(["result": String(value)]))
+        return result_any(String(value))
+    }
+
+    func result_any(value: AnyObject) -> HttpResponse{
+        return .OK(.Json(["type": "any", "value": value]))
+    }
+
+    func result_string(value: AnyObject) -> HttpResponse{
+        return .OK(.Json(["type": "string", "value": value]))
+    }
+
+    func result_symbol(type: ResultType) -> HttpResponse {
+        switch type {
+        case .Failed:
+            return .OK(.Json(["type": "symbol", "value": "Failed"]))
+        case .Nil:
+            return .OK(.Json(["type": "symbol", "value": "nothing"]))
+        }
     }
 }
 
