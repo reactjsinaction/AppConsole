@@ -10,8 +10,12 @@ AppConsole
 # Run server on your iOS app
 
 ```swift
+import AppConsole
+
 class ViewController: UIViewController {
     override func viewDidLoad() {
+        super.viewDidLoad()
+
         AppConsole(initial: self).run()
     }
 }
