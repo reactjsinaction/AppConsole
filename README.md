@@ -8,6 +8,7 @@ AppConsole
 
 
 # Run server on your iOS app
+
 ```swift
 class ViewController: UIViewController {
     override func viewDidLoad() {
@@ -35,6 +36,7 @@ UIDeviceRGBColorSpace 0 1 0 1
 ```
 
 * Query mode : pressing the `>` key.
+
 ```julia
 Swifter> vc.view.frame
 "{{0, 0}, {320, 568}}"
