@@ -21,7 +21,7 @@ class ViewController: UIViewController {
  * Install Julia http://julialang.org/
 ```julia
 julia> Pkg.add("Swifter")
-INFO: Installing Swifter v0.0.1
+INFO: Installing Swifter v0.0.3
 ```
 
 ```julia
@@ -31,7 +31,7 @@ julia> vc = initial("http://localhost:8080")
 Swifter.Memory(Swifter.App("http://localhost:8080"),"0x7f9238f1e4b0")
 
 julia> @query vc.view.backgroundColor = UIColor.greenColor()
-"UIDeviceRGBColorSpace 0 1 0 1"
+UIDeviceRGBColorSpace 0 1 0 1
 ```
 
 * Query mode : pressing the `>` key.
@@ -39,14 +39,20 @@ julia> @query vc.view.backgroundColor = UIColor.greenColor()
 Swifter> vc.view.frame
 "{{0, 0}, {320, 568}}"
 
-Swifter> vc.label.text = "hello world"
-"hello world"
+Swifter> vc.label.text = "Hello world"
+"Hello world"
 
-Swifter> vc.label.backgroundColor = UIColor.yellowColor()
-"UIDeviceRGBColorSpace 1 1 0 1"
+Swifter> vc.label.frame = "{{20, 300}, {500, 200}}"
+"{{20, 300}, {500, 200}}"
+
+Swifter> vc.label.backgroundColor = UIColor.whiteColor()
+UIDeviceWhiteColorSpace 1 1
+
+Swifter> vc.view.subviews[0].backgroundColor = UIColor.yellowColor()
+UIDeviceRGBColorSpace 1 1 0 1
 
 Swifter> vc.label.font = UIFont(name: "Helvetica", size: 50)
-"<UICTFont: 0x7faa91461b40> font-family: \"Helvetica\"; font-weight: normal; font-style: normal; font-size: 50.00pt"
+<UICTFont: 0x7f8c687e1cc0> font-family: "Helvetica"; font-weight: normal; font-style: normal; font-size: 50.00pt
 ```
 
 

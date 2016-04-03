@@ -1,4 +1,4 @@
 run:
 	xctool --version
 	@echo
-	xctool -workspace ConsoleApp/ConsoleApp.xcworkspace -scheme ConsoleApp -derivedDataPath ConsoleApp/build -sdk iphonesimulator
+	xctool -workspace Demo/Test/TestApp/TestApp.xcworkspace -scheme TestApp -derivedDataPath Demo/Test/TestApp/build -sdk iphonesimulator
