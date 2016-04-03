@@ -274,26 +274,40 @@ class TypeHandler {
     func typepair_function(name: String, _ args: [Float]) -> (Bool, AnyObject?) {
         switch name {
         case "CGPointMake":
-            let point = CGPointMake(CGFloat(args[0]), CGFloat(args[1]))
-            return (false, NSStringFromCGPoint(point))
+            if 2 == args.count {
+                let point = CGPointMake(CGFloat(args[0]), CGFloat(args[1]))
+                return (false, NSStringFromCGPoint(point))
+            }
         case "CGSizeMake":
-            let size = CGSizeMake(CGFloat(args[0]), CGFloat(args[1]))
-            return (false, NSStringFromCGSize(size))
+            if 2 == args.count {
+                let size = CGSizeMake(CGFloat(args[0]), CGFloat(args[1]))
+                return (false, NSStringFromCGSize(size))
+            }
         case "CGVectorMake":
-            let vector = CGVectorMake(CGFloat(args[0]), CGFloat(args[1]))
-            return (false, NSStringFromCGVector(vector))
+            if 2 == args.count {
+                let vector = CGVectorMake(CGFloat(args[0]), CGFloat(args[1]))
+                return (false, NSStringFromCGVector(vector))
+            }
         case "CGRectMake":
-            let rect = CGRectMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
-            return (false, NSStringFromCGRect(rect))
+            if 4 == args.count {
+                let rect = CGRectMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
+                return (false, NSStringFromCGRect(rect))
+            }
         case "CGAffineTransformMake":
-            let transform = CGAffineTransformMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]), CGFloat(args[4]), CGFloat(args[5]))
-            return (false, NSStringFromCGAffineTransform(transform))
+            if 6 == args.count {
+                let transform = CGAffineTransformMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]), CGFloat(args[4]), CGFloat(args[5]))
+                return (false, NSStringFromCGAffineTransform(transform))
+            }
         case "UIEdgeInsetsMake":
-            let insets = UIEdgeInsetsMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
-            return (false, NSStringFromUIEdgeInsets(insets))
+            if 4 == args.count {
+                let insets = UIEdgeInsetsMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
+                return (false, NSStringFromUIEdgeInsets(insets))
+            }
         case "UIOffsetMake":
-            let offset = UIOffsetMake(CGFloat(args[0]), CGFloat(args[1]))
-            return (false, NSStringFromUIOffset(offset))
+            if 2 == args.count {
+                let offset = UIOffsetMake(CGFloat(args[0]), CGFloat(args[1]))
+                return (false, NSStringFromUIOffset(offset))
+            }
 
         default:
             break
