@@ -34,6 +34,34 @@ class ConsoleRouter {
             return self.result(info)
         }
         
+        server["/image"] = { req in
+            for (name, value) in req.queryParams {
+                if "path" == name {
+                    let path = value.componentsSeparatedByString(".")
+                    var lhs = [TypePair]()
+                    for item in path {
+                        if item.hasPrefix("0x") {
+                            lhs.append(TypePair(first: "address", second: item))
+                        } else {
+                            lhs.append(TypePair(first: "symbol", second: item))
+                        }
+                    }
+
+                    let (_,object) = self.chain(nil, lhs, full: true)
+                    switch object {
+                    case is UIView:
+                        return self.result_view(object as! UIView)
+                    case is UIScreen:
+                        return self.result_screen(object as! UIScreen)
+                    default:
+                        break
+                    }
+                }
+            }
+
+            return self.result_symbol(.Failed)
+        }
+
         server["/query"] = { req in
             var query = [String: String]()
             do {
@@ -106,6 +134,8 @@ class ConsoleRouter {
             return result_any(value)
         case is String:
             return result_string(value)
+        case is UIView, is UIScreen:
+            return .OK(.Json(["type": "view", "value": String(value)]))
         case is [String: AnyObject]:
             var d = [String: String]()
             for (k,v) in (value as! [String: AnyObject]) {
@@ -129,6 +159,27 @@ class ConsoleRouter {
         return .OK(.Json(["type": "string", "value": value]))
     }
 
+    func result_view(view: UIView) -> HttpResponse {
+        let headers = ["Content-Type": "image/jpeg"]
+        if let data = view.to_data() {
+            let writer: (HttpResponseBodyWriter -> Void) = { writer in
+                writer.write(Array(UnsafeBufferPointer(start: UnsafePointer<UInt8>(data.bytes), count: data.length)))
+            }
+            return .RAW(200, "OK", headers, writer)
+        }
+        return result_symbol(.Failed)
+    }
+
+    func result_screen(screen: UIScreen) -> HttpResponse {
+        let headers = ["Content-Type": "image/jpeg"]
+        let writer: (HttpResponseBodyWriter -> Void) = { writer in
+            if let data = screen.to_data() {
+                writer.write(Array(UnsafeBufferPointer(start: UnsafePointer<UInt8>(data.bytes), count: data.length)))
+            }
+        }
+        return .RAW(200, "OK", headers, writer)
+    }
+
     func result_symbol(type: ResultType) -> HttpResponse {
         switch type {
         case .Failed:
@@ -138,8 +189,6 @@ class ConsoleRouter {
         }
     }
 }
-
-
 
 
 
@@ -155,7 +204,7 @@ extension ConsoleRouter {
     func chain_setter(obj: AnyObject, lhs: String, value: AnyObject?) -> AnyObject? {
         let vec: [TypePair] = json_parse(lhs)
         if let pair = vec.last {
-            type_handler.setter_handle(obj, pair.second as! String, value: value)
+            self.type_handler.setter_handle(obj, pair.second as! String, value: value)
         }
         return nil
     }
@@ -270,12 +319,16 @@ extension ConsoleRouter {
     }
 }
 
-
-
-struct TypePair {
+struct TypePair: CustomStringConvertible {
     var first: String
     var second: AnyObject
+    var description: String {
+        get {
+            return "TypePair(\(first), \(second))"
+        }
+    }
 }
+
 
 // MARK: ConsoleRouter - utils
 
@@ -294,7 +347,7 @@ extension ConsoleRouter {
         env[address] = obj
         return ["address": address]
     }
-    
+
     func var_or_method(pair: TypePair) -> AnyObject? {
         switch pair.second {
         case is String:
@@ -302,6 +355,8 @@ extension ConsoleRouter {
                 if str.hasSuffix("()") {
                     let method = str.slice(0, to: str.characters.count - 2)
                     return method
+                } else if let num = Int(str) {
+                    return num
                 } else {
                     return str
                 }

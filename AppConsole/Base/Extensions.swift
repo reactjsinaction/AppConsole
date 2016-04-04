@@ -6,7 +6,42 @@
 //  Copyright © 2016 factorcat. All rights reserved.
 //
 
-import Foundation
+import UIKit
+
+
+// MARK: UIView
+
+extension UIView {
+    func to_data() -> NSData? {
+        if bounds.size == CGSizeZero {
+            return nil
+        } else {
+            if typeof(self).hasPrefix("_") {
+                return nil
+            } else {
+                UIGraphicsBeginImageContextWithOptions(self.bounds.size, false, UIScreen.mainScreen().scale)
+                self.drawViewHierarchyInRect(self.bounds, afterScreenUpdates: false)
+                let image: UIImage = UIGraphicsGetImageFromCurrentImageContext()
+                UIGraphicsEndImageContext()
+                return UIImageJPEGRepresentation(image, 1.0)
+            }
+        }
+    }
+}
+
+
+// MARK: UIScreen
+
+extension UIScreen {
+    func to_data() -> NSData? {
+        let view = self.snapshotViewAfterScreenUpdates(true)
+        UIGraphicsBeginImageContextWithOptions(view.bounds.size, false, self.scale)
+        view.drawViewHierarchyInRect(view.bounds, afterScreenUpdates: true)
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return UIImageJPEGRepresentation(image, 1.0)
+    }
+}
 
 
 // MARK: String

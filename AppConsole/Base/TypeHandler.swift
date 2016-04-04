@@ -169,82 +169,51 @@ class TypeHandler {
             return
         }
         
+        var arg: AnyObject
+        if let val = value as? ValueType {
+            arg = val.value
+        } else if let val = value {
+            arg = val
+        } else {
+            return
+        }
+
         dispatch_async(dispatch_get_main_queue(), {
-            
-            if let val: ValueType = value as? ValueType {
-                switch type {
-                case "@":
-                    break
-                case "B":
-                    typealias F = @convention(c) (AnyObject, Selector, Bool)-> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Bool)
-                case "d":
-                    typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Double)
-                case "i", "q":
-                    typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Int)
-                case "f":
-                    typealias F = @convention(c) (AnyObject, Selector, Float)-> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! Float)
-                case "Q":
-                    typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! UInt)
-                case "{CGPoint=dd}", "{CGPoint=ff}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGPoint)
-                case "{CGSize=dd}", "{CGSize=ff}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGSize)
-                case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGRect)
-                case "{CGAffineTransform=dddddd}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CGAffineTransform)
-                case "{CATransform3D=dddddddddddddddd}":
-                    typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, val.value as! CATransform3D)
-                case let val:
-                    Log.info("val", val)
-                }
-            } else {
-                switch type {
-                case "@":
-                    obj.performSelector(sel, withObject: value)
-                case "B":
-                    typealias F = @convention(c) (AnyObject, Selector, Bool)-> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Bool)
-                case "d":
-                    typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Double)
-                case "i", "q":
-                    typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Int)
-                case "f":
-                    typealias F = @convention(c) (AnyObject, Selector, Float)-> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! Float)
-                case "Q":
-                    typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, value as! UInt)
-                case "{CGPoint=dd}", "{CGPoint=ff}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(value as! String))
-                case "{CGSize=dd}", "{CGSize=ff}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(value as! String))
-                case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(value as! String))
-                case "{CGAffineTransform=dddddd}":
-                    typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(value as! String))
-                case "{CATransform3D=dddddddddddddddd}":
-                    typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Void
-                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(value as! String))
-                case let val:
-                    Log.info("val", val)
-                }
+            switch type {
+            case "@":
+                obj.performSelector(sel, withObject: arg)
+            case "B":
+                typealias F = @convention(c) (AnyObject, Selector, Bool)-> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Bool)
+            case "d":
+                typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Double)
+            case "i", "q":
+                typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Int)
+            case "f":
+                typealias F = @convention(c) (AnyObject, Selector, Float)-> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Float)
+            case "Q":
+                typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! UInt)
+            case "{CGPoint=dd}", "{CGPoint=ff}":
+                typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(arg as! String))
+            case "{CGSize=dd}", "{CGSize=ff}":
+                typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(arg as! String))
+            case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
+                typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(arg as! String))
+            case "{CGAffineTransform=dddddd}":
+                typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(arg as! String))
+            case "{CATransform3D=dddddddddddddddd}":
+                typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Void
+                self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(arg as! String))
+            case let val:
+                Log.info("val", val)
             }
         })
     }
