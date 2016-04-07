@@ -227,8 +227,9 @@ extension ConsoleRouter {
                                 return chain_dictionary(dict, meth, 1, vec, full: full)
                             } else if let arr = obj as? [AnyObject] {
                                 return chain_array(arr, meth, 1, vec, full: full)
+                            } else {
+                                return (false, nil)
                             }
-                            return (false, obj)
                         case is Int:
                             if let arr = obj as? NSArray,
                                 let idx = method as? Int {
@@ -355,6 +356,8 @@ extension ConsoleRouter {
         case is ValueType:
             if let val = value as? ValueType {
                 switch val.type {
+                case "B":
+                    return result_bool(val.value)
                 case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
                     return result_string(val.value)
                 default:
@@ -398,9 +401,12 @@ extension ConsoleRouter {
         return .OK(.Json(["type": "string", "value": value]))
     }
 
+    func result_bool(value: AnyObject) -> HttpResponse{
+        return .OK(.Json(["type": "bool", "value": value]))
+    }
+
     func result_image(imagedata: NSData?) -> HttpResponse {
         let headers = ["Content-Type": "image/png"]
-//        let headers = ["Content-Type": "image/jpeg"]
         if let data = imagedata {
             let writer: (HttpResponseBodyWriter -> Void) = { writer in
                 writer.write(Array(UnsafeBufferPointer(start: UnsafePointer<UInt8>(data.bytes), count: data.length)))

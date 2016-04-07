@@ -9,16 +9,6 @@
 import UIKit
 
 
-
-// MARK: Dictionary
-extension Dictionary {
-//    var keys: [String] {
-//        get {
-//            return []
-//        }
-//    }
-}
-
 // MARK: UIView
 
 extension UIView {
@@ -34,7 +24,6 @@ extension UIView {
                 let image: UIImage = UIGraphicsGetImageFromCurrentImageContext()
                 UIGraphicsEndImageContext()
                 return UIImagePNGRepresentation(image)
-//                return UIImageJPEGRepresentation(image, 1.0)
             }
         }
     }
@@ -51,7 +40,6 @@ extension UIScreen {
         let image = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         return UIImagePNGRepresentation(image)
-//        return UIImageJPEGRepresentation(image, 1.0)
     }
 }
 
@@ -193,6 +181,22 @@ public func testMethodsForClass(cls: AnyClass) -> [String] {
     }
     return list
 }
+
+func propertyNames(obj: NSObject) -> Array<String> {
+    let myClass: AnyClass = object_getClass(obj)
+    var results: Array<String> = [];
+    var count: UInt32 = 0
+    let properties = class_copyPropertyList(myClass, &count)
+    for i: UInt32 in 0 ..< count {
+        let property = properties[Int(i)]
+        let cname = property_getName(property)
+        let name = String.fromCString(cname)
+        results.append(name!)
+    }
+    free(properties)
+    return results
+}
+
 
 struct TestResult {
     var tests: Int

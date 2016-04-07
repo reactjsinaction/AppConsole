@@ -12,7 +12,7 @@ import UIKit
 
 
 class TypeHandler {
-    
+
     // MARK: TypeHandler - getter_handle
     func getter_handle(obj: AnyObject, _ name: String) -> ChainResult {
         if let val = obj as? ValueType {
@@ -20,7 +20,10 @@ class TypeHandler {
         }
         
         let sel = Selector(name)
-        guard obj.respondsToSelector(sel) else {
+        if obj.respondsToSelector(sel) {
+        } else if propertyNames(obj as! NSObject).contains(name) {
+            return getter_property(obj, name)
+        } else {
             return (false, nil)
         }
         let type = return_types(obj, name)
@@ -76,7 +79,7 @@ class TypeHandler {
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
             return (true, ValueType(type: type, value: NSStringFromCATransform3D(value)))
         case let val:
-            Log.info("val", val)
+            Log.info("getter_handle val", val)
         }
         return (false, nil)
     }
@@ -157,6 +160,11 @@ class TypeHandler {
         }
     }
 
+    // MARK: TypeHandler - getter_property
+    func getter_property(obj: AnyObject, _ name: String) -> ChainResult {
+        return (true, obj.valueForKey(name))
+    }
+
     // MARK: TypeHandler - setter_handle
     func setter_handle(obj: AnyObject, _ name: String, value: AnyObject?) {
         let method = "set" + name.uppercase_first() + ":"
@@ -213,7 +221,7 @@ class TypeHandler {
                 typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Void
                 self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(arg as! String))
             case let val:
-                Log.info("val", val)
+                Log.info("setter_handle val", val)
             }
         })
     }
@@ -302,7 +310,7 @@ class TypeHandler {
             }
             
         default:
-            Log.info("constructor", dict)
+            Log.info("typepair_constructor", dict)
             break
         }
         return (true, nil)
