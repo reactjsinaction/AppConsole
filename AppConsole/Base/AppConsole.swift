@@ -12,10 +12,10 @@ import NetUtils
 
 public class AppConsole {
     
-    var initial: UIViewController
+    var initial: AnyObject
     let server = HttpServer()
 
-    public init(initial: UIViewController) {
+    public init(initial: AnyObject) {
         self.initial = initial
     }
     

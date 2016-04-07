@@ -14,7 +14,7 @@ import UIKit
 class TypeHandler {
     
     // MARK: TypeHandler - getter_handle
-    func getter_handle(obj: AnyObject, _ name: String) -> (Bool, AnyObject?) {
+    func getter_handle(obj: AnyObject, _ name: String) -> ChainResult {
         if let val = obj as? ValueType {
             return getter_valuetype(val, name)
         }
@@ -81,7 +81,7 @@ class TypeHandler {
         return (false, nil)
     }
     
-    func getter_valuetype(val: ValueType, _ name: String) -> (Bool, AnyObject?) {
+    func getter_valuetype(val: ValueType, _ name: String) -> ChainResult {
         let value = val.value as! String
         switch val.type {
         case "{CGPoint=dd}", "{CGPoint=ff}":
@@ -219,7 +219,7 @@ class TypeHandler {
     }
     
     // MARK: TypeHandler - typepair_constant
-    func typepair_constant(name: String) -> (Bool, AnyObject?) {
+    func typepair_constant(name: String) -> ChainResult {
         switch name {
         case "CGPointZero":
             return (true, NSStringFromCGPoint(CGPointZero))
@@ -240,7 +240,7 @@ class TypeHandler {
     }
     
     // MARK: TypeHandler - typepair_function
-    func typepair_function(name: String, _ args: [Float]) -> (Bool, AnyObject?) {
+    func typepair_function(name: String, _ args: [Float]) -> ChainResult {
         switch name {
         case "CGPointMake":
             if 2 == args.count {
@@ -285,7 +285,7 @@ class TypeHandler {
     }
     
     // MARK: TypeHandler - typepair_constructor
-    func typepair_constructor(name: String, _ args: [[AnyObject]]) -> (Bool, AnyObject?) {
+    func typepair_constructor(name: String, _ args: [[AnyObject]]) -> ChainResult {
         var dict = [String: AnyObject?]()
         for arg: [AnyObject] in args {
             if let k = arg.first as? String, let v = arg.last {

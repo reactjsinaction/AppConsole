@@ -9,6 +9,16 @@
 import UIKit
 
 
+
+// MARK: Dictionary
+extension Dictionary {
+//    var keys: [String] {
+//        get {
+//            return []
+//        }
+//    }
+}
+
 // MARK: UIView
 
 extension UIView {
@@ -23,7 +33,8 @@ extension UIView {
                 self.drawViewHierarchyInRect(self.bounds, afterScreenUpdates: false)
                 let image: UIImage = UIGraphicsGetImageFromCurrentImageContext()
                 UIGraphicsEndImageContext()
-                return UIImageJPEGRepresentation(image, 1.0)
+                return UIImagePNGRepresentation(image)
+//                return UIImageJPEGRepresentation(image, 1.0)
             }
         }
     }
@@ -39,7 +50,8 @@ extension UIScreen {
         view.drawViewHierarchyInRect(view.bounds, afterScreenUpdates: true)
         let image = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
-        return UIImageJPEGRepresentation(image, 1.0)
+        return UIImagePNGRepresentation(image)
+//        return UIImageJPEGRepresentation(image, 1.0)
     }
 }
 
@@ -72,8 +84,12 @@ extension String {
 
 extension Array {
     func slice_to_end(nth: Int) -> Array {
-        let s: ArraySlice = self[nth..<self.endIndex]
-        return Array(s)
+        if nth < self.endIndex {
+            let s: ArraySlice = self[nth..<self.endIndex]
+            return Array(s)
+        } else {
+            return Array()
+        }
     }
 }
 

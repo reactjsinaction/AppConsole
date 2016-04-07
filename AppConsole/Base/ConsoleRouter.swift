@@ -9,20 +9,15 @@
 import UIKit
 import Swifter
 
+typealias ChainResult = (Bool, AnyObject?)
 
 class ConsoleRouter {
     
     let type_handler = TypeHandler()
     var env = [String: AnyObject]()
-    
-    enum ResultType {
-        case Failed
-        case Nil
-    }
-    
-    
+
     // MARK: ConsoleRouter - route
-    func route(server: HttpServer, initial: UIViewController) {
+    func route(server: HttpServer, initial: AnyObject) {
 
         server["/"] = { req in
             let info = [String]()
@@ -48,18 +43,15 @@ class ConsoleRouter {
                     }
 
                     let (_,object) = self.chain(nil, lhs, full: true)
-                    switch object {
-                    case is UIView:
-                        return self.result_view(object as! UIView)
-                    case is UIScreen:
-                        return self.result_screen(object as! UIScreen)
-                    default:
-                        break
+                    if let view = object as? UIView {
+                        return self.result_image(view.to_data())
+                    } else if let screen = object as? UIScreen {
+                        return self.result_image(screen.to_data())
                     }
                 }
             }
 
-            return self.result_symbol(.Failed)
+            return self.result_failed()
         }
 
         server["/query"] = { req in
@@ -78,10 +70,10 @@ class ConsoleRouter {
                         if let obj = object {
                             return self.result(obj)
                         } else {
-                            return self.result_symbol(.Nil)
+                            return self.result_nil()
                         }
                     } else {
-                        return self.result_symbol(.Failed)
+                        return self.result_failed()
                     }
                 case "Setter":
                     if let rhs = query["rhs"] {
@@ -93,99 +85,20 @@ class ConsoleRouter {
                                 if let val = value {
                                     return self.result(val)
                                 } else {
-                                    return self.result_symbol(.Nil)
+                                    return self.result_nil()
                                 }
                             } else {
-                                return self.result_symbol(.Nil)
+                                return self.result_nil()
                             }
                         } else {
-                            return self.result_symbol(.Failed)
+                            return self.result_failed()
                         }
                     }
                 default:
                     break
                 }
             }
-            return self.result_symbol(.Failed)
-        }
-    }
-
-    // MARK: ConsoleRouter - result
-    func result(value: AnyObject) -> HttpResponse {
-        switch value {
-        case is ValueType:
-            if let val = value as? ValueType {
-                switch val.type {
-                case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
-                    return result_string(val.value)
-                default:
-                    if let num = val.value as? NSNumber {
-                        if num.stringValue.containsString("e+") {
-                            return result_any(String(num))
-                        } else {
-                            return result_any(num.floatValue)
-                        }
-                    } else {
-                        return result_any(val.value)
-                    }
-                }
-            }
-        case is Int:
-            return result_any(value)
-        case is String:
-            return result_string(value)
-        case is UIView, is UIScreen:
-            return .OK(.Json(["type": "view", "value": String(value)]))
-        case is [String: AnyObject]:
-            var d = [String: String]()
-            for (k,v) in (value as! [String: AnyObject]) {
-                d[k] = String(v)
-            }
-            return result_any(d)
-        case is [AnyObject]:
-            let a = (value as! [AnyObject]).map { x in String(x) }
-            return result_any(a)
-        default:
-            break
-        }
-        return result_any(String(value))
-    }
-
-    func result_any(value: AnyObject) -> HttpResponse{
-        return .OK(.Json(["type": "any", "value": value]))
-    }
-
-    func result_string(value: AnyObject) -> HttpResponse{
-        return .OK(.Json(["type": "string", "value": value]))
-    }
-
-    func result_view(view: UIView) -> HttpResponse {
-        let headers = ["Content-Type": "image/jpeg"]
-        if let data = view.to_data() {
-            let writer: (HttpResponseBodyWriter -> Void) = { writer in
-                writer.write(Array(UnsafeBufferPointer(start: UnsafePointer<UInt8>(data.bytes), count: data.length)))
-            }
-            return .RAW(200, "OK", headers, writer)
-        }
-        return result_symbol(.Failed)
-    }
-
-    func result_screen(screen: UIScreen) -> HttpResponse {
-        let headers = ["Content-Type": "image/jpeg"]
-        let writer: (HttpResponseBodyWriter -> Void) = { writer in
-            if let data = screen.to_data() {
-                writer.write(Array(UnsafeBufferPointer(start: UnsafePointer<UInt8>(data.bytes), count: data.length)))
-            }
-        }
-        return .RAW(200, "OK", headers, writer)
-    }
-
-    func result_symbol(type: ResultType) -> HttpResponse {
-        switch type {
-        case .Failed:
-            return .OK(.Json(["type": "symbol", "value": "Failed"]))
-        case .Nil:
-            return .OK(.Json(["type": "symbol", "value": "nothing"]))
+            return self.result_failed()
         }
     }
 }
@@ -209,7 +122,7 @@ extension ConsoleRouter {
         return nil
     }
     
-    func typepair_chain(pair: TypePair) -> (Bool, AnyObject?) {
+    func typepair_chain(pair: TypePair) -> ChainResult {
         switch pair.first {
         case "string":
             return (false, pair.second)
@@ -239,7 +152,7 @@ extension ConsoleRouter {
         }
     }
 
-    func typepair_callargs(info: AnyObject) -> (Bool, AnyObject?) {
+    func typepair_callargs(info: AnyObject) -> ChainResult {
         if let nameargs = info as? [AnyObject] {
             if let name = nameargs.first as? String,
                 let args = nameargs.last {
@@ -258,7 +171,39 @@ extension ConsoleRouter {
         return (true, nil)
     }
 
-    func chain(object: AnyObject?, _ vec: [TypePair], full: Bool) -> (Bool, AnyObject?) {
+    func chain_dictionary(dict: [String: AnyObject], _ key: String, _ nth: Int, _ vec: [TypePair], full: Bool) -> ChainResult {
+        if let obj = dict[key] {
+            return chain(obj, vec.slice_to_end(nth), full: full)
+        } else {
+            switch key {
+            case "keys":
+                return chain([String](dict.keys), vec.slice_to_end(nth), full: full)
+            case "values":
+                return chain([AnyObject](dict.values), vec.slice_to_end(nth), full: full)
+            default:
+                break
+            }
+        }
+        return (false, dict)
+    }
+
+    func chain_array(arr: [AnyObject], _ method: String, _ nth: Int, _ vec: [TypePair], full: Bool) -> ChainResult {
+        switch method {
+        case "sort":
+            if let a = arr as? [String] {
+                return chain(a.sort(<), vec.slice_to_end(nth), full: full)
+            }
+        case "first":
+            return chain(arr.first, vec.slice_to_end(nth), full: full)
+        case "last":
+            return chain(arr.last, vec.slice_to_end(nth), full: full)
+        default:
+            break
+        }
+        return (false, arr)
+    }
+
+    func chain(object: AnyObject?, _ vec: [TypePair], full: Bool) -> ChainResult {
         if let obj = object {
             let cnt = vec.count
             for (idx,pair) in vec.enumerate() {
@@ -270,16 +215,20 @@ extension ConsoleRouter {
                     if let method = self.var_or_method(pair) {
                         switch method {
                         case is String:
-                            let (success,ob) = type_handler.getter_handle(obj, method as! String)
+                            let meth = method as! String
+                            let (success,ob) = type_handler.getter_handle(obj, meth)
                             if success {
                                 if let o = ob {
                                     return chain(o, vec.slice_to_end(1), full: full)
                                 } else {
                                     return (true, nil)
                                 }
-                            } else {
-                                return (false, obj)
+                            } else if let dict = obj as? [String: AnyObject] {
+                                return chain_dictionary(dict, meth, 1, vec, full: full)
+                            } else if let arr = obj as? [AnyObject] {
+                                return chain_array(arr, meth, 1, vec, full: full)
                             }
+                            return (false, obj)
                         case is Int:
                             if let arr = obj as? NSArray,
                                 let idx = method as? Int {
@@ -394,5 +343,78 @@ extension ConsoleRouter {
         } else {
             return [TypePair]()
         }
+    }
+}
+
+
+
+// MARK: ConsoleRouter - result
+extension ConsoleRouter {
+    func result(value: AnyObject) -> HttpResponse {
+        switch value {
+        case is ValueType:
+            if let val = value as? ValueType {
+                switch val.type {
+                case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
+                    return result_string(val.value)
+                default:
+                    if let num = val.value as? NSNumber {
+                        if num.stringValue.containsString("e+") {
+                            return result_any(String(num))
+                        } else {
+                            return result_any(num.floatValue)
+                        }
+                    } else {
+                        return result_any(val.value)
+                    }
+                }
+            }
+        case is Int:
+            return result_any(value)
+        case is String:
+            return result_string(value)
+        case is UIView, is UIScreen:
+            return .OK(.Json(["type": "view", "value": String(value)]))
+        case is [String: AnyObject]:
+            var d = [String: String]()
+            for (k,v) in (value as! [String: AnyObject]) {
+                d[k] = String(v)
+            }
+            return result_any(d)
+        case is [AnyObject]:
+            let a = (value as! [AnyObject]).map { x in String(x) }
+            return result_any(a)
+        default:
+            break
+        }
+        return result_any(String(value))
+    }
+
+    func result_any(value: AnyObject) -> HttpResponse{
+        return .OK(.Json(["type": "any", "value": value]))
+    }
+
+    func result_string(value: AnyObject) -> HttpResponse{
+        return .OK(.Json(["type": "string", "value": value]))
+    }
+
+    func result_image(imagedata: NSData?) -> HttpResponse {
+        let headers = ["Content-Type": "image/png"]
+//        let headers = ["Content-Type": "image/jpeg"]
+        if let data = imagedata {
+            let writer: (HttpResponseBodyWriter -> Void) = { writer in
+                writer.write(Array(UnsafeBufferPointer(start: UnsafePointer<UInt8>(data.bytes), count: data.length)))
+            }
+            return .RAW(200, "OK", headers, writer)
+        }
+        return result_failed()
+    }
+
+    func result_nil() -> HttpResponse {
+        return .OK(.Json(["type": "symbol", "value": "nothing"]))
+    }
+
+    func result_failed() -> HttpResponse {
+        return .OK(.Json(["type": "symbol", "value": "Failed"]))
     }
 }
