@@ -14,166 +14,176 @@ import UIKit
 class TypeHandler {
 
     // MARK: TypeHandler - getter_handle
-    func getter_handle(obj: AnyObject, _ name: String) -> ChainResult {
+    func getter_handle(obj: AnyObject, _ name: String, _ args: [AnyObject]? = nil) -> TypeMatchResult {
         if let val = obj as? ValueType {
             return getter_valuetype(val, name)
         }
         
         let sel = Selector(name)
         if obj.respondsToSelector(sel) {
-        } else if propertyNames(obj as! NSObject).contains(name) {
-            return getter_property(obj, name)
+        } else if let nsobj = obj as? NSObject where ns_property_names(nsobj).contains(name) {
+            return getter_property(nsobj, name)
         } else {
-            return (false, nil)
-        }
-        let type = return_types(obj, name)
-        switch type {
-        case "@":
-            if let inst = obj.performSelector(sel) {
-                if "Unmanaged<AnyObject>" == typeof(inst) {
-                    return (true, convert(inst))
-                } else {
-                    return (true, inst as? AnyObject)
+            if let _ = obj as? NSObject {
+                let names = swift_property_names(obj)
+                if names.contains(name) {
+                    return (.Match, swift_property_for_key(obj, name))
                 }
             } else {
-                return (true, nil)
+                return (.None, nil)
+            }
+            return (.None, nil)
+        }
+
+        let returntype = ns_return_types(obj, name)
+        switch returntype {
+        case "@", "#":
+            if let inst = obj.performSelector(sel) {
+                if "Unmanaged<AnyObject>" == typeof(inst) {
+                    return (.Match, convert(inst))
+                } else {
+                    return (.Match, inst as? AnyObject)
+                }
+            } else {
+                return (.None, nil)
             }
         case "B": // B Bool
             typealias F = @convention(c) (AnyObject, Selector)-> Bool
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: value))
+            return (.Match, ValueType(type: returntype, value: value))
         case "d": // d Double
             typealias F = @convention(c) (AnyObject, Selector)-> Double
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: value))
+            return (.Match, ValueType(type: returntype, value: value))
         case "i", "q": // i int, q CLongLong
             typealias F = @convention(c) (AnyObject, Selector)-> Int
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: value))
+            return (.Match, ValueType(type: returntype, value: value))
         case "f": // f float
             typealias F = @convention(c) (AnyObject, Selector)-> Float
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: value))
+            return (.Match, ValueType(type: returntype, value: value))
         case "Q": // Q CUnsignedLongLong
             typealias F = @convention(c) (AnyObject, Selector)-> UInt
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: value))
+            return (.Match, ValueType(type: returntype, value: value))
         case "{CGPoint=dd}", "{CGPoint=ff}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGPoint
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: NSStringFromCGPoint(value)))
+            return (.Match, ValueType(type: returntype, value: NSStringFromCGPoint(value)))
         case "{CGSize=dd}", "{CGSize=ff}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGSize
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: NSStringFromCGSize(value)))
+            return (.Match, ValueType(type: returntype, value: NSStringFromCGSize(value)))
         case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGRect
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: NSStringFromCGRect(value)))
+            return (.Match, ValueType(type: returntype, value: NSStringFromCGRect(value)))
         case "{CGAffineTransform=dddddd}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGAffineTransform
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: NSStringFromCGAffineTransform(value)))
+            return (.Match, ValueType(type: returntype, value: NSStringFromCGAffineTransform(value)))
         case "{CATransform3D=dddddddddddddddd}":
             typealias F = @convention(c) (AnyObject, Selector)-> CATransform3D
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (true, ValueType(type: type, value: NSStringFromCATransform3D(value)))
+            return (.Match, ValueType(type: returntype, value: NSStringFromCATransform3D(value)))
         case let val:
             Log.info("getter_handle val", val)
+            break
         }
-        return (false, nil)
+        return (.None, nil)
     }
     
-    func getter_valuetype(val: ValueType, _ name: String) -> ChainResult {
+    func getter_valuetype(val: ValueType, _ name: String) -> TypeMatchResult {
         let value = val.value as! String
         switch val.type {
         case "{CGPoint=dd}", "{CGPoint=ff}":
             let point = CGPointFromString(value)
             switch name {
-            case "x": return (true, point.x)
-            case "y": return (true, point.y)
-            default: return (false, nil)
+            case "x": return (.Match, point.x)
+            case "y": return (.Match, point.y)
+            default: return (.None, nil)
             }
         case "{CGSize=dd}", "{CGSize=ff}":
             let size = CGSizeFromString(value)
             switch name {
-            case "width": return (true, size.width)
-            case "height": return (true, size.height)
-            default: return (false, nil)
+            case "width": return (.Match, size.width)
+            case "height": return (.Match, size.height)
+            default: return (.None, nil)
             }
         case "{CGRect={CGPoint=ff}{CGSize=ff}}":
             let rect = CGRectFromString(value)
             switch name {
             case "origin":
-                return (true, ValueType(type: "{CGPoint=ff}", value: NSStringFromCGPoint(rect.origin)))
+                return (.Match, ValueType(type: "{CGPoint=ff}", value: NSStringFromCGPoint(rect.origin)))
             case "size":
-                return (true, ValueType(type: "{CGSize=ff}", value: NSStringFromCGSize(rect.size)))
+                return (.Match, ValueType(type: "{CGSize=ff}", value: NSStringFromCGSize(rect.size)))
             default:
-                return (false, nil)
+                return (.None, nil)
             }
         case "{CGRect={CGPoint=dd}{CGSize=dd}}":
             let rect = CGRectFromString(value)
             switch name {
             case "origin":
-                return (true, ValueType(type: "{CGPoint=dd}", value: NSStringFromCGPoint(rect.origin)))
+                return (.Match, ValueType(type: "{CGPoint=dd}", value: NSStringFromCGPoint(rect.origin)))
             case "size":
-                return (true, ValueType(type: "{CGSize=dd}", value: NSStringFromCGSize(rect.size)))
+                return (.Match, ValueType(type: "{CGSize=dd}", value: NSStringFromCGSize(rect.size)))
             default:
-                return (false, nil)
+                return (.None, nil)
             }
         case "{CGAffineTransform=dddddd}":
             let transform = CGAffineTransformFromString(value)
             switch name {
-            case "a": return (true, Float(transform.a))
-            case "b": return (true, Float(transform.b))
-            case "c": return (true, Float(transform.c))
-            case "d": return (true, Float(transform.d))
-            case "tx": return (true, Float(transform.tx))
-            case "ty": return (true, Float(transform.ty))
+            case "a": return (.Match, Float(transform.a))
+            case "b": return (.Match, Float(transform.b))
+            case "c": return (.Match, Float(transform.c))
+            case "d": return (.Match, Float(transform.d))
+            case "tx": return (.Match, Float(transform.tx))
+            case "ty": return (.Match, Float(transform.ty))
             default:
-                return (false, nil)
+                return (.None, nil)
             }
         case "{CATransform3D=dddddddddddddddd}":
             let transform = CATransform3DFromString(value)
             switch name {
-            case "m11": return (true, Float(transform.m11))
-            case "m12": return (true, Float(transform.m12))
-            case "m13": return (true, Float(transform.m13))
-            case "m14": return (true, Float(transform.m14))
-            case "m21": return (true, Float(transform.m21))
-            case "m22": return (true, Float(transform.m22))
-            case "m23": return (true, Float(transform.m23))
-            case "m24": return (true, Float(transform.m24))
-            case "m31": return (true, Float(transform.m31))
-            case "m32": return (true, Float(transform.m32))
-            case "m33": return (true, Float(transform.m33))
-            case "m34": return (true, Float(transform.m34))
-            case "m41": return (true, Float(transform.m41))
-            case "m42": return (true, Float(transform.m42))
-            case "m43": return (true, Float(transform.m43))
-            case "m44": return (true, Float(transform.m44))
+            case "m11": return (.Match, Float(transform.m11))
+            case "m12": return (.Match, Float(transform.m12))
+            case "m13": return (.Match, Float(transform.m13))
+            case "m14": return (.Match, Float(transform.m14))
+            case "m21": return (.Match, Float(transform.m21))
+            case "m22": return (.Match, Float(transform.m22))
+            case "m23": return (.Match, Float(transform.m23))
+            case "m24": return (.Match, Float(transform.m24))
+            case "m31": return (.Match, Float(transform.m31))
+            case "m32": return (.Match, Float(transform.m32))
+            case "m33": return (.Match, Float(transform.m33))
+            case "m34": return (.Match, Float(transform.m34))
+            case "m41": return (.Match, Float(transform.m41))
+            case "m42": return (.Match, Float(transform.m42))
+            case "m43": return (.Match, Float(transform.m43))
+            case "m44": return (.Match, Float(transform.m44))
             default:
-                return (false, nil)
+                return (.None, nil)
             }
         default:
-            return (false, nil)
+            return (.None, nil)
         }
     }
 
     // MARK: TypeHandler - getter_property
-    func getter_property(obj: AnyObject, _ name: String) -> ChainResult {
-        return (true, obj.valueForKey(name))
+    func getter_property(obj: NSObject, _ name: String) -> TypeMatchResult {
+        return (.Match, obj.valueForKey(name))
     }
 
     // MARK: TypeHandler - setter_handle
-    func setter_handle(obj: AnyObject, _ name: String, value: AnyObject?) {
-        let method = "set" + name.uppercase_first() + ":"
+    func setter_handle(obj: AnyObject, _ method: String, value: AnyObject?) {
         let sel = Selector(method)
         guard obj.respondsToSelector(sel) else {
             return
         }
-        let type = argument_types(obj, method, nth: 2)
-        if type != "@" && nil == value {
+        let argtype = ns_argument_types(obj, method, nth: 2)
+
+        if argtype != "@" && nil == value {
             return
         }
         
@@ -187,24 +197,34 @@ class TypeHandler {
         }
 
         dispatch_async(dispatch_get_main_queue(), {
-            switch type {
+            switch argtype {
             case "@":
                 obj.performSelector(sel, withObject: arg)
             case "B":
-                typealias F = @convention(c) (AnyObject, Selector, Bool)-> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Bool)
+                if let a = arg as? Bool {
+                    typealias F = @convention(c) (AnyObject, Selector, Bool)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+                }
             case "d":
-                typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Double)
+                if let a = arg as? Double {
+                    typealias F = @convention(c) (AnyObject, Selector, Double) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+                }
             case "i", "q":
-                typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Int)
+                if let a = arg as? Int {
+                    typealias F = @convention(c) (AnyObject, Selector, Int) -> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+                }
             case "f":
-                typealias F = @convention(c) (AnyObject, Selector, Float)-> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! Float)
+                if let a = arg as? Float {
+                    typealias F = @convention(c) (AnyObject, Selector, Float)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+                }
             case "Q":
-                typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
-                self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg as! UInt)
+                if let a = arg as? UInt {
+                    typealias F = @convention(c) (AnyObject, Selector, UInt)-> Void
+                    self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+                }
             case "{CGPoint=dd}", "{CGPoint=ff}":
                 typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Void
                 self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(arg as! String))
@@ -225,97 +245,127 @@ class TypeHandler {
             }
         })
     }
-    
+
     // MARK: TypeHandler - typepair_constant
-    func typepair_constant(name: String) -> ChainResult {
+    func typepair_constant(name: String) -> TypeMatchResult {
         switch name {
         case "CGPointZero":
-            return (true, NSStringFromCGPoint(CGPointZero))
+            return (.Match, NSStringFromCGPoint(CGPointZero))
         case "CGSizeZero":
-            return (true, NSStringFromCGSize(CGSizeZero))
+            return (.Match, NSStringFromCGSize(CGSizeZero))
         case "CGRectZero":
-            return (true, NSStringFromCGRect(CGRectZero))
+            return (.Match, NSStringFromCGRect(CGRectZero))
         case "CGAffineTransformIdentity":
-            return (true, NSStringFromCGAffineTransform(CGAffineTransformIdentity))
+            return (.Match, NSStringFromCGAffineTransform(CGAffineTransformIdentity))
         case "UIEdgeInsetsZero":
-            return (true, NSStringFromUIEdgeInsets(UIEdgeInsetsZero))
+            return (.Match, NSStringFromUIEdgeInsets(UIEdgeInsetsZero))
         case "UIOffsetZero":
-            return (true, NSStringFromUIOffset(UIOffsetZero))
+            return (.Match, NSStringFromUIOffset(UIOffsetZero))
         default:
             break
         }
-        return (false, nil)
+        return (.None, nil)
     }
-    
+
     // MARK: TypeHandler - typepair_function
-    func typepair_function(name: String, _ args: [Float]) -> ChainResult {
+    func typepair_method(obj: AnyObject, name: String, _ args: [AnyObject]) -> TypeMatchResult {
+        let method = name + ":"
+        let sel = Selector(method)
+        guard obj.respondsToSelector(sel) else {
+            return (.None, nil)
+        }
+
+        let argtype = ns_argument_types(obj, method, nth: 2)
+        let arg = args.first
+        let returntype = ns_return_types(obj, method)
+
+        switch returntype {
+        case "v":
+            return typepair_method_returns_void(obj, method, argtype, arg)
+        case "B":
+            return typepair_method_returns_bool(obj, method, argtype, arg)
+        case "q":
+            return typepair_method_returns_int(obj, method, argtype, arg)
+        case "f":
+            return typepair_method_returns_float(obj, method, argtype, arg)
+        case "@":
+            return typepair_method_returns_instance(obj, method, argtype, arg)
+        default:
+            Log.info("typepair_method", returntype, obj, method, argtype, arg)
+            break
+        }
+        return (.None, nil)
+    }
+
+    func typepair_function(name: String, _ args: [Float]) -> TypeMatchResult {
         switch name {
         case "CGPointMake":
             if 2 == args.count {
                 let point = CGPointMake(CGFloat(args[0]), CGFloat(args[1]))
-                return (false, NSStringFromCGPoint(point))
+                return (.Match, NSStringFromCGPoint(point))
             }
         case "CGSizeMake":
             if 2 == args.count {
                 let size = CGSizeMake(CGFloat(args[0]), CGFloat(args[1]))
-                return (false, NSStringFromCGSize(size))
+                return (.Match, NSStringFromCGSize(size))
             }
         case "CGVectorMake":
             if 2 == args.count {
                 let vector = CGVectorMake(CGFloat(args[0]), CGFloat(args[1]))
-                return (false, NSStringFromCGVector(vector))
+                return (.Match, NSStringFromCGVector(vector))
             }
         case "CGRectMake":
             if 4 == args.count {
                 let rect = CGRectMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
-                return (false, NSStringFromCGRect(rect))
+                return (.Match, NSStringFromCGRect(rect))
             }
         case "CGAffineTransformMake":
             if 6 == args.count {
                 let transform = CGAffineTransformMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]), CGFloat(args[4]), CGFloat(args[5]))
-                return (false, NSStringFromCGAffineTransform(transform))
+                return (.Match, NSStringFromCGAffineTransform(transform))
             }
         case "UIEdgeInsetsMake":
             if 4 == args.count {
                 let insets = UIEdgeInsetsMake(CGFloat(args[0]), CGFloat(args[1]), CGFloat(args[2]), CGFloat(args[3]))
-                return (false, NSStringFromUIEdgeInsets(insets))
+                return (.Match, NSStringFromUIEdgeInsets(insets))
             }
         case "UIOffsetMake":
             if 2 == args.count {
                 let offset = UIOffsetMake(CGFloat(args[0]), CGFloat(args[1]))
-                return (false, NSStringFromUIOffset(offset))
+                return (.Match, NSStringFromUIOffset(offset))
             }
 
         default:
+            Log.info("typepair_function", name, args)
             break
         }
-        return (true, nil)
+        return (.None, nil)
     }
-    
+
     // MARK: TypeHandler - typepair_constructor
-    func typepair_constructor(name: String, _ args: [[AnyObject]]) -> ChainResult {
+    func typepair_constructor(name: String, _ args: [[AnyObject]]) -> TypeMatchResult {
         var dict = [String: AnyObject?]()
         for arg: [AnyObject] in args {
             if let k = arg.first as? String, let v = arg.last {
                 dict[k] = v
             }
         }
-        
+
         switch name {
-            
+
         case "UIFont":
             if let name = dict["name"] as? String,
                 let size = dict["size"] as? Float {
-                return (false, UIFont(name: name, size: CGFloat(size)))
+                return (.Match, UIFont(name: name, size: CGFloat(size)))
             }
-            
+
         default:
-            Log.info("typepair_constructor", dict)
+            Log.info("typepair_constructor", name, dict)
             break
         }
-        return (true, nil)
+        return (.None, nil)
     }
-    
+
     func extractMethodFrom<U>(owner: AnyObject, _ selector: Selector, _ F: U.Type) -> U {
         let method: Method
         if owner is AnyClass {
@@ -383,4 +433,292 @@ func CATransform3DFromString(str: String) -> CATransform3D {
 
 func NSStringFromCATransform3D(transform: CATransform3D) -> String {
     return String(transform)
+}
+
+
+// methods
+extension TypeHandler {
+    func typepair_method_returns_void(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?) -> TypeMatchResult {
+        setter_handle(obj, method, value: arg)
+        return (.Match, ValueType(type: "v", value: ""))
+    }
+    
+    func typepair_method_returns_bool(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?) -> TypeMatchResult {
+        let sel = Selector(method)
+        var value: AnyObject? = nil
+        switch argtype {
+        case "B":
+            if let a = arg as? Bool {
+                typealias F = @convention(c) (AnyObject, Selector, Bool)-> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "d":
+            if let a = arg as? Double {
+                typealias F = @convention(c) (AnyObject, Selector, Double) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "i", "q":
+            if let a = arg as? Int {
+                typealias F = @convention(c) (AnyObject, Selector, Int) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "f":
+            if let a = arg as? Float {
+                typealias F = @convention(c) (AnyObject, Selector, Float)-> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "Q":
+            if let a = arg as? UInt {
+                typealias F = @convention(c) (AnyObject, Selector, UInt)-> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "@":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, String) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "{CGPoint=dd}", "{CGPoint=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(a))
+            }
+        case "{CGSize=dd}", "{CGSize=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(a))
+            }
+        case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(a))
+            }
+        case "{CGAffineTransform=dddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(a))
+            }
+        case "{CATransform3D=dddddddddddddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Bool
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(a))
+            }
+        case let val:
+            Log.info("typepair_method_returns_bool", val)
+            break
+        }
+        if let v = value {
+            let returntype = "B"
+            return (.Match, ValueType(type: returntype, value: v))
+        } else {
+            return  (.None, nil)
+        }
+    }
+
+    func typepair_method_returns_int(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?) -> TypeMatchResult {
+        let sel = Selector(method)
+        var value: Int? = nil
+        switch argtype {
+        case "B":
+            if let a = arg as? Bool {
+                typealias F = @convention(c) (AnyObject, Selector, Bool)-> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "d":
+            if let a = arg as? Double {
+                typealias F = @convention(c) (AnyObject, Selector, Double) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "i", "q":
+            if let a = arg as? Int {
+                typealias F = @convention(c) (AnyObject, Selector, Int) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "f":
+            if let a = arg as? Float {
+                typealias F = @convention(c) (AnyObject, Selector, Float)-> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "Q":
+            if let a = arg as? UInt {
+                typealias F = @convention(c) (AnyObject, Selector, UInt)-> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "@":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, String) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "{CGPoint=dd}", "{CGPoint=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(a))
+            }
+        case "{CGSize=dd}", "{CGSize=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(a))
+            }
+        case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(a))
+            }
+        case "{CGAffineTransform=dddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(a))
+            }
+        case "{CATransform3D=dddddddddddddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Int
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(a))
+            }
+        case let val:
+            Log.info("typepair_method_returns_int", val)
+            break
+        }
+        if let v = value {
+            let returntype = "q"
+            return (.Match, ValueType(type: returntype, value: v))
+        } else {
+            return  (.None, nil)
+        }
+    }
+
+    func typepair_method_returns_float(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?) -> TypeMatchResult {
+        let sel = Selector(method)
+        var value: AnyObject? = nil
+        switch argtype {
+        case "B":
+            if let a = arg as? Bool {
+                typealias F = @convention(c) (AnyObject, Selector, Bool)-> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "d":
+            if let a = arg as? Double {
+                typealias F = @convention(c) (AnyObject, Selector, Double) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "i", "q":
+            if let a = arg as? Int {
+                typealias F = @convention(c) (AnyObject, Selector, Int) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "f":
+            if let a = arg as? Float {
+                typealias F = @convention(c) (AnyObject, Selector, Float)-> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "Q":
+            if let a = arg as? UInt {
+                typealias F = @convention(c) (AnyObject, Selector, UInt)-> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "@":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, String) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "{CGPoint=dd}", "{CGPoint=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(a))
+            }
+        case "{CGSize=dd}", "{CGSize=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGSize) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(a))
+            }
+        case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGRect) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(a))
+            }
+        case "{CGAffineTransform=dddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(a))
+            }
+        case "{CATransform3D=dddddddddddddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> Float
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(a))
+            }
+        case let val:
+            Log.info("typepair_method_returns_bool", val)
+            break
+        }
+        if let v = value {
+            let returntype = "f"
+            return (.Match, ValueType(type: returntype, value: v))
+        } else {
+            return (.None, nil)
+        }
+    }
+
+    func typepair_method_returns_instance(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?) -> TypeMatchResult {
+        let sel = Selector(method)
+        var value: AnyObject? = nil
+        switch argtype {
+        case "B":
+            if let a = arg as? Bool {
+                typealias F = @convention(c) (AnyObject, Selector, Bool)-> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "d":
+            if let a = arg as? Double {
+                typealias F = @convention(c) (AnyObject, Selector, Double) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "i", "q":
+            if let a = arg as? Int {
+                typealias F = @convention(c) (AnyObject, Selector, Int) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "f":
+            if let a = arg as? Float {
+                typealias F = @convention(c) (AnyObject, Selector, Float)-> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "Q":
+            if let a = arg as? UInt {
+                typealias F = @convention(c) (AnyObject, Selector, UInt)-> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "@":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, String) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            }
+        case "{CGPoint=dd}", "{CGPoint=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGPoint) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGPointFromString(a))
+            }
+        case "{CGSize=dd}", "{CGSize=ff}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGSize) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGSizeFromString(a))
+            }
+        case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGRect) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGRectFromString(a))
+            }
+        case "{CGAffineTransform=dddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CGAffineTransform) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CGAffineTransformFromString(a))
+            }
+        case "{CATransform3D=dddddddddddddddd}":
+            if let a = arg as? String {
+                typealias F = @convention(c) (AnyObject, Selector, CATransform3D) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, CATransform3DFromString(a))
+            }
+        case let val:
+            Log.info("typepair_method_returns_bool", val)
+            break
+        }
+        return (.Match, value)
+    }
 }

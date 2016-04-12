@@ -85,8 +85,7 @@ extension Array {
 // MARK: typeof
 func typeof(a: Any) -> String {
     let mirror = Mirror(reflecting: a)
-    let type = String(mirror.subjectType)
-    return type
+    return String(mirror.subjectType)
 }
 
 // MARK: convert
@@ -98,8 +97,8 @@ func convert(a: Any) -> AnyObject? {
     }
 }
 
-// MARK: return_types
-func return_types(obj: AnyObject, _ name: String) -> String {
+// MARK: ns_return_types
+func ns_return_types(obj: AnyObject, _ name: String) -> String {
     let m: Method = class_getInstanceMethod(object_getClass(obj), Selector(name))
     let returnType = method_copyReturnType(m)
     defer {
@@ -112,7 +111,8 @@ func return_types(obj: AnyObject, _ name: String) -> String {
     }
 }
 
-func argument_types(obj: AnyObject, _ name: String, nth: Int) -> String {
+// MARK: ns_argument_types
+func ns_argument_types(obj: AnyObject, _ name: String, nth: Int) -> String {
     let m: Method = class_getInstanceMethod(object_getClass(obj), Selector(name))
     let argumentType = method_copyArgumentType(m, UInt32(nth))
     defer {
@@ -125,7 +125,73 @@ func argument_types(obj: AnyObject, _ name: String, nth: Int) -> String {
     }
 }
 
+// MARK: ns_property_names
+func ns_property_names(obj: NSObject) -> Array<String> {
+    let myClass: AnyClass = object_getClass(obj)
+    var results: Array<String> = []
+    var count: UInt32 = 0
+    let properties = class_copyPropertyList(myClass, &count)
+    for i: UInt32 in 0 ..< count {
+        let property = properties[Int(i)]
+        let cname = property_getName(property)
+        if let name = String.fromCString(cname) {
+            results.append(name)
+        }
+    }
+    free(properties)
+    return results
+}
 
+func swift_property_names(a: AnyObject) -> [String] {
+    return Mirror(reflecting: a).children.filter { $0.label != nil }.map { $0.label! }
+}
+
+func swift_property_for_key(a: AnyObject, _ key: String) -> AnyObject? {
+    for child in Mirror(reflecting: a).children {
+        if child.label == key {
+            if String(typeof(child.value)).hasPrefix("(") {
+                return ValueType(type: typeof(child.value), value: String(child.value))
+            } else {
+                return child.value as? AnyObject
+            }
+        }
+    }
+    return nil
+}
+
+// MARK: ns_protocol_names
+func ns_protocol_names(obj: NSObject) -> Array<String> {
+    let myClass: AnyClass = object_getClass(obj)
+    var results: Array<String> = []
+    var count: UInt32 = 0
+    let protocols: AutoreleasingUnsafeMutablePointer<Protocol?> = class_copyProtocolList(myClass, &count)
+    for i: UInt32 in 0 ..< count {
+        let protoco = protocols[Int(i)]
+        let cname = protocol_getName(protoco)
+        if let name = String.fromCString(cname) {
+            results.append(name)
+        }
+    }
+//    free(protocols)
+    return results
+}
+
+// MARK: ns_ivar_names
+func ns_ivar_names(obj: NSObject) -> Array<String> {
+    let myClass: AnyClass = object_getClass(obj)
+    var results: Array<String> = []
+    var count: UInt32 = 0
+    let ivars: UnsafeMutablePointer<Ivar> = class_copyIvarList(myClass, &count)
+    for i: UInt32 in 0 ..< count {
+        let ivar = ivars[Int(i)]
+        let cname = ivar_getName(ivar)
+        if let name = String.fromCString(cname) {
+            results.append(name)
+        }
+    }
+    free(ivars)
+    return results
+}
 
 
 // MARK: UnitTest
@@ -181,22 +247,6 @@ public func testMethodsForClass(cls: AnyClass) -> [String] {
     }
     return list
 }
-
-func propertyNames(obj: NSObject) -> Array<String> {
-    let myClass: AnyClass = object_getClass(obj)
-    var results: Array<String> = [];
-    var count: UInt32 = 0
-    let properties = class_copyPropertyList(myClass, &count)
-    for i: UInt32 in 0 ..< count {
-        let property = properties[Int(i)]
-        let cname = property_getName(property)
-        let name = String.fromCString(cname)
-        results.append(name!)
-    }
-    free(properties)
-    return results
-}
-
 
 struct TestResult {
     var tests: Int

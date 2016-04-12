@@ -26,7 +26,7 @@ class TypeHandlerTests: XCTestCase {
         let view = UIView(frame: CGRectZero)
         
         let rect = CGRectMake(0,0,100,100)
-        handler.setter_handle(view, "frame", value: NSStringFromCGRect(rect))
+        handler.setter_handle(view, "setFrame:", value: NSStringFromCGRect(rect))
         let dispatchTime: dispatch_time_t = dispatch_time(DISPATCH_TIME_NOW, Int64(0.1 * Double(NSEC_PER_SEC)))
         dispatch_after(dispatchTime, dispatch_get_main_queue(), {
             //            let (_, val) = handler.getter_handle(view, "frame")

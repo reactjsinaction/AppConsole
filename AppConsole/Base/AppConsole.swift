@@ -19,14 +19,14 @@ public class AppConsole {
         self.initial = initial
     }
     
-    
     // MARK: AppConsole - run
-    
-    public func run(port: Int = 8080) -> String {
-        ConsoleRouter().route(server, initial: initial)
+    public func run(port: Int = 8080, _ block: (ConsoleRouter->Void)? = nil) -> String {
+        let router = ConsoleRouter()
+        router.route(server, initial: initial)
         try! server.start(UInt16(port))
         let url = "http://\(localip()):\(port)"
         Log.info("Console Server has started on \(url)")
+        block?(router)
         return url
     }
     
