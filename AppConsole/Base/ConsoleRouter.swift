@@ -275,7 +275,7 @@ extension ConsoleRouter {
                             } else if let arr = obj as? [AnyObject] {
                                 return chain_array(arr, meth, 1, vec, full: full)
                             } else {
-                                return (.Stop, val)
+                                return (.Go, val)
                             }
                         case is Int:
                             if let arr = obj as? NSArray,
