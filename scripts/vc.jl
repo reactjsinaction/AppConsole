@@ -8,7 +8,7 @@ vc = initial("http://localhost:8080")
 
 @query vc.label.text = "Hello world"
 
-@query vc.label.frame = "{{20, 300}, {500, 200}}"
+@query vc.label.frame = "{{20, 300}, {300, 200}}"
 
 @query vc.label.backgroundColor = UIColor.whiteColor()
 

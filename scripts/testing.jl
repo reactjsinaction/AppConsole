@@ -14,8 +14,7 @@ vc = initial("http://localhost:8080")
 
 @testset "View Controller" begin
 
-@test "{{20, 100}, {500, 200}}" == @query vc.label.frame
-@test 375 == @query vc.view.frame.size.width
+@test 320 == @query vc.view.frame.size.width
 
 @query vc.label.text = "Hello world"
 @test "Hello world" == @query vc.label.text
@@ -33,7 +32,7 @@ end
 
 @testset "Application" begin
 
-@test "{{0, 0}, {375, 667}}" == @query UIApplication.sharedApplication().delegate.window.frame
+@test 320 == @query UIApplication.sharedApplication().delegate.window.frame.size.width
 
 end
 

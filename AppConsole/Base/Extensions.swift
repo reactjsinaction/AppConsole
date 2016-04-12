@@ -327,7 +327,7 @@ class Logger {
         
         var str = ""
         str += "\(filename) #\(line) "
-        str += "\(function)() "
+        str += "\(function) "
         let length = args.count
         for (index, x) in args.enumerate() {
             str += String(x)

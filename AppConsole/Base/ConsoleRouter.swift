@@ -84,7 +84,7 @@ public class ConsoleRouter {
                             return self.result_nil()
                         }
                     } else {
-                        return self.result_failed()
+                        return self.result_failed(object)
                     }
                 case "Setter":
                     if let rhs = query["rhs"] {
@@ -152,21 +152,15 @@ extension ConsoleRouter {
                     return (.Stop, nil)
                 default:
                     if let o = obj {
-                        let (match, val) = type_handler.getter_handle(o, str)
-                        switch match {
-                        case .Match:
-                            return (.Go, val)
-                        case .None:
-                            if swift_property_names(o).contains(str) {
-                                return (.Go, swift_property_for_key(o, str))
-                            } else {
-                                for name in [str, str+":"] {
-                                    if o.respondsToSelector(NSSelectorFromString(name)) {
-                                        return (.Go, ValueType(type: "Function", value: "Function \(name)"))
-                                    }
+                        if swift_property_names(o).contains(str) {
+                            return (.Go, swift_property_for_key(o, str))
+                        } else {
+                            for name in [str, str+":"] {
+                                if o.respondsToSelector(NSSelectorFromString(name)) {
+                                    return (.Go, ValueType(type: "symbol", value: "Function \(name)"))
                                 }
-                                return (.Stop, nil)
                             }
+                            return (.Go, obj)
                         }
                     }
                 }
@@ -182,18 +176,12 @@ extension ConsoleRouter {
                     return (.Stop, val)
                 }
             } else {
-                if let name = pair.second as? String {
+                if let _ = pair.second as? String {
                     if let o = obj {
                         if o is NSObject {
-                            let (match, val) = type_handler.getter_handle(o, name)
-                            switch match {
-                            case .Match:
-                                return (.Go, val)
-                            case .None:
-                                return (.Stop, val)
-                            }
+                            return (.Go, nil)
                         } else {
-                            return (.Go, ValueType(type: "NonNSObject", value: "Needs subclass NSObject"))
+                            return (.Stop, ValueType(type: "symbol", value: "Needs subclass NSObject"))
                         }
                     }
                 }
@@ -287,7 +275,7 @@ extension ConsoleRouter {
                             } else if let arr = obj as? [AnyObject] {
                                 return chain_array(arr, meth, 1, vec, full: full)
                             } else {
-                                return (.Go, val)
+                                return (.Stop, val)
                             }
                         case is Int:
                             if let arr = obj as? NSArray,
@@ -302,7 +290,7 @@ extension ConsoleRouter {
                     }
                     return (.Go, val)
                 } else {
-                    return (.Stop, obj)
+                    return (.Stop, val)
                 }
             }
             return (.Go, obj)
@@ -421,10 +409,6 @@ extension ConsoleRouter {
         case is ValueType:
             if let val = value as? ValueType {
                 switch val.type {
-                case "Function":
-                    return result_function(val.value)
-                case "NonNSObject":
-                    return result_non_nsobject(val.value)
                 case "v":
                     return result_void()
                 case "B":
@@ -480,14 +464,6 @@ extension ConsoleRouter {
         return .OK(.Json(["type": "symbol", "value": "nothing"]))
     }
 
-    func result_function(value: AnyObject) -> HttpResponse {
-        return .OK(.Json(["type": "symbol", "value": value]))
-    }
-
-    func result_non_nsobject(value: AnyObject) -> HttpResponse {
-        return .OK(.Json(["type": "symbol", "value": value]))
-    }
-
     func result_image(imagedata: NSData?) -> HttpResponse {
         let headers = ["Content-Type": "image/png"]
         if let data = imagedata {
@@ -503,7 +479,11 @@ extension ConsoleRouter {
         return .OK(.Json(["type": "symbol", "value": "nothing"]))
     }
 
-    func result_failed() -> HttpResponse {
-        return .OK(.Json(["type": "symbol", "value": "Failed"]))
+    func result_failed(obj: AnyObject? = nil) -> HttpResponse {
+        if let val = obj as? ValueType {
+            return .OK(.Json(["type": val.type, "value": val.value]))
+        } else {
+            return .OK(.Json(["type": "symbol", "value": "Failed"]))
+        }
     }
 }

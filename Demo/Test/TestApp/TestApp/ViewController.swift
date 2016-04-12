@@ -9,14 +9,18 @@
 import UIKit
 
 
-
 class A {
     var s = "a string"
-    var n = 1
+    var n = 5
     var b = true
     var t = (5,6)
     func f() -> String {
-        return "a call"
+        Log.info(".")
+        return "b call"
+    }
+    func g(n: Int) -> Int {
+        Log.info("+")
+        return n+1
     }
     init() {
     }
@@ -28,11 +32,16 @@ let a = A()
 
 class B: NSObject {
     var s = "b string"
-    var n = 0
-    var b = false
+    var n = 5
+    var b = true
     var t = (5,6)
     func f() -> String {
+        Log.info(".")
         return "b call"
+    }
+    func g(n: Int) -> Int {
+        Log.info("+")
+        return n+1
     }
     override init() {
     }
