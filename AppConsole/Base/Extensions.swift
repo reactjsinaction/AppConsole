@@ -9,39 +9,230 @@
 import UIKit
 
 
-// MARK: UIView
 
-extension UIView {
-    func to_data() -> NSData? {
-        if bounds.size == CGSizeZero {
-            return nil
+// MARK: UITableView - tap
+extension UITableView {
+    func tap(section section: Int, row: Int) {
+        if let cell = cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: section)) {
+            cell.tap()
+        }
+    }
+    
+    func tap(index index: Int) {
+        if index > numberOfRowsInSection(0) {
         } else {
-            if typeof(self).hasPrefix("_") {
-                return nil
-            } else {
-                UIGraphicsBeginImageContextWithOptions(self.bounds.size, false, UIScreen.mainScreen().scale)
-                self.drawViewHierarchyInRect(self.bounds, afterScreenUpdates: false)
-                let image: UIImage = UIGraphicsGetImageFromCurrentImageContext()
-                UIGraphicsEndImageContext()
-                return UIImagePNGRepresentation(image)
+            self.tap(section: 0, row: index)
+        }
+    }
+    
+    func tap(text text: String) {
+        for section in 0..<numberOfSections {
+            for row in 0..<numberOfRowsInSection(section) {
+                if let cell = cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: section)) {
+                    if cell.textLabel?.text == text {
+                        cell.tap()
+                        return
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: UITableViewCell - tap
+extension UITableViewCell {
+    func tap() {
+        if let tableView = self.superview?.superview as? UITableView,
+            let indexPath = tableView.indexPathForCell(self) {
+            dispatch_async(dispatch_get_main_queue(), {
+                tableView.delegate?.tableView?(tableView, willSelectRowAtIndexPath: indexPath)
+                self.selected = true
+                let delay = 0.2 * Double(NSEC_PER_SEC)
+                let time = dispatch_time(DISPATCH_TIME_NOW, Int64(delay))
+                dispatch_after(time, dispatch_get_main_queue(), {
+                    tableView.delegate?.tableView?(tableView, didSelectRowAtIndexPath: indexPath)
+                    self.selected = false
+                })
+            })
+        }
+    }
+}
+
+
+// MARK: UINavigationItem - tap
+//extension UINavigationItem {
+//    func tap() {
+//        
+//    }
+//}
+
+// MARK: UISegmentedControl - tap
+extension UISegmentedControl {
+    func tap(index index: Int) {
+        if index < numberOfSegments {
+            dispatch_async(dispatch_get_main_queue(), {
+                self.selectedSegmentIndex = index
+            })
+            for controlEvent in Array(arrayLiteral: allControlEvents()) {
+                switch controlEvent {
+                case UIControlEvents.ValueChanged:
+                    self.sendActionsForControlEvents(controlEvent)
+                default:
+                    break
+                }
+            }
+        }
+    }
+    
+    func tap(title title: String) {
+        for index in 0..<numberOfSegments {
+            if let str = titleForSegmentAtIndex(index) {
+                if str == title {
+                    dispatch_async(dispatch_get_main_queue(), {
+                        self.selectedSegmentIndex = index
+                    })
+                    for controlEvent in Array(arrayLiteral: allControlEvents()) {
+                        switch controlEvent {
+                        case UIControlEvents.ValueChanged:
+                            self.sendActionsForControlEvents(controlEvent)
+                        default:
+                            break
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: UISlider - tap
+extension UISlider {
+    func tap(value value: Float) {
+        dispatch_async(dispatch_get_main_queue(), {
+            self.value = value
+        })
+        for controlEvent in Array(arrayLiteral: allControlEvents()) {
+            switch controlEvent {
+            case UIControlEvents.ValueChanged:
+                self.sendActionsForControlEvents(controlEvent)
+            default:
+                break
+            }
+        }
+    }
+}
+
+// MARK: UISwitch - tap
+extension UISwitch {
+    func tap() {
+        let onOff = !on
+        dispatch_async(dispatch_get_main_queue(), {
+            self.setOn(onOff, animated: true)
+        })
+        for controlEvent in Array(arrayLiteral: allControlEvents()) {
+            switch controlEvent {
+            case UIControlEvents.ValueChanged:
+                self.sendActionsForControlEvents(controlEvent)
+            default:
+                break
+            }
+        }
+    }
+}
+
+// MARK: UIButton - tap
+extension UIButton {
+    func tap() {
+        for controlEvent in Array(arrayLiteral: allControlEvents()) {
+            switch controlEvent {
+            case UIControlEvents.TouchUpInside:
+                dispatch_async(dispatch_get_main_queue(), {
+                    let shadowColor = self.titleShadowColorForState(.Selected)
+                    self.setTitleShadowColor(.blueColor(), forState: .Selected)
+                    self.selected = true
+                    let delay = 0.2 * Double(NSEC_PER_SEC)
+                    let time = dispatch_time(DISPATCH_TIME_NOW, Int64(delay))
+                    dispatch_after(time, dispatch_get_main_queue(), {
+                        self.setTitleShadowColor(shadowColor, forState: .Selected)
+                        self.sendActionsForControlEvents(controlEvent)
+                        self.selected = false
+                    })
+                })
+            default:
+                Log.info("controlEvent", controlEvent)
+                break
             }
         }
     }
 }
 
 
-// MARK: UIScreen
+
+// MARK: UINavigationController - pop
+
+extension UINavigationController {
+    func pop() {
+        dispatch_async(dispatch_get_main_queue(), {
+            self.popViewControllerAnimated(true)
+        })
+    }
+}
+
+
+
+// MARK: UIView - to_data
+
+extension UIView {
+    func to_data() -> NSData? {
+        if bounds.size == CGSizeZero {
+            return nil
+        } else {
+//            if typeof(self).hasPrefix("_") {
+//                return nil
+//            } else {
+                UIGraphicsBeginImageContextWithOptions(self.bounds.size, false, UIScreen.mainScreen().scale)
+                self.drawViewHierarchyInRect(self.bounds, afterScreenUpdates: false)
+                let image: UIImage = UIGraphicsGetImageFromCurrentImageContext()
+                UIGraphicsEndImageContext()
+                return UIImagePNGRepresentation(image)
+//            }
+        }
+    }
+}
+
+
+
+// MARK: UIScreen - to_data
 
 extension UIScreen {
     func to_data() -> NSData? {
-        let view = self.snapshotViewAfterScreenUpdates(true)
-        UIGraphicsBeginImageContextWithOptions(view.bounds.size, false, self.scale)
-        view.drawViewHierarchyInRect(view.bounds, afterScreenUpdates: true)
-        let image = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return UIImagePNGRepresentation(image)
+        let app = UIApplication.sharedApplication()
+        if let window = app.keyWindow {
+            UIGraphicsBeginImageContextWithOptions(window.frame.size, window.opaque, 0.0)
+            window.layer.renderInContext(UIGraphicsGetCurrentContext()!)
+            if !app.statusBarHidden {
+                // is private api?
+                if let statusBar = app.valueForKey("statusBarWindow") {
+                    statusBar.layer.renderInContext(UIGraphicsGetCurrentContext()!)
+                }
+            }
+            let image = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            return UIImagePNGRepresentation(image)
+        } else {
+            return nil
+        }
+
+//        // disabled touch events after this
+//        let view = self.snapshotViewAfterScreenUpdates(false)
+//        UIGraphicsBeginImageContextWithOptions(view.bounds.size, false, self.scale)
+//        view.drawViewHierarchyInRect(view.bounds, afterScreenUpdates: true)
+//        let image = UIGraphicsGetImageFromCurrentImageContext()
+//        UIGraphicsEndImageContext()
+//        return UIImagePNGRepresentation(image)
     }
 }
+
 
 
 // MARK: String

@@ -21,6 +21,9 @@
                                     <rect key="frame" x="0.0" y="0.0" width="600" height="43.5"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </tableViewCellContentView>
+                                <connections>
+                                    <segue destination="ltq-9R-RW5" kind="show" id="uTC-CG-IhZ"/>
+                                </connections>
                             </tableViewCell>
                         </prototypes>
                         <connections>
@@ -46,6 +49,23 @@
                     </connections>
                 </navigationController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ZuF-0H-vzr" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+        <!--Color View Controller-->
+        <scene sceneID="Ogc-qn-cvR">
+            <objects>
+                <viewController storyboardIdentifier="ColorViewController" id="ltq-9R-RW5" customClass="ColorViewController" customModule="TableViewController" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="5FH-m1-1aQ"/>
+                        <viewControllerLayoutGuide type="bottom" id="Gy4-jx-RG7"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="iTG-rG-cNN">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="aP4-ko-Mq5" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
         </scene>
     </scenes>

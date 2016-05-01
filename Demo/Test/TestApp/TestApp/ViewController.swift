@@ -15,11 +15,11 @@ class A {
     var b = true
     var t = (5,6)
     func f() -> String {
-        Log.info(".")
+        Log.info("a.f")
         return "b call"
     }
     func g(n: Int) -> Int {
-        Log.info("+")
+        Log.info("a.g")
         return n+1
     }
     init() {
@@ -36,11 +36,11 @@ class B: NSObject {
     var b = true
     var t = (5,6)
     func f() -> String {
-        Log.info(".")
+        Log.info("b.f")
         return "b call"
     }
     func g(n: Int) -> Int {
-        Log.info("+")
+        Log.info("b.g")
         return n+1
     }
     override init() {
@@ -52,12 +52,13 @@ let b = B()
 
 
 class ViewController: UIViewController {
+
     @IBOutlet var label: UILabel!
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        
+
         label.text = AppConsole(initial: self).run { app in
             app.register("a", object: a)
             app.register("b", object: b)
@@ -69,6 +70,4 @@ class ViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
 
-
 }
-

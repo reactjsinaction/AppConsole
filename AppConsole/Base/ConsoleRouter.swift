@@ -36,23 +36,21 @@ public class ConsoleRouter {
         }
         
         server["/initial"] = { req in
-            let info = self.push_to_env(initial)
-            return self.result(info)
+//            self.register(self.addressof(initial), object: initial)
+            return self.result(initial)
         }
         
         server["/image"] = { req in
             for (name, value) in req.queryParams {
                 if "path" == name {
-                    let path = value.componentsSeparatedByString(".")
                     var lhs = [TypePair]()
-                    for item in path {
-                        if item.hasPrefix("0x") {
-                            lhs.append(TypePair(first: "address", second: item))
-                        } else {
-                            lhs.append(TypePair(first: "symbol", second: item))
+                    do {
+                        if let data = value.dataUsingEncoding(NSUTF8StringEncoding),
+                            let json = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments) as? [AnyObject] {
+                            lhs = self.typepairs(json)
                         }
+                    } catch {
                     }
-
                     let (_,object) = self.chain(nil, lhs, full: true)
                     if let view = object as? UIView {
                         return self.result_image(view.to_data())
@@ -61,19 +59,18 @@ public class ConsoleRouter {
                     }
                 }
             }
-
             return self.result_failed()
         }
 
         server["/query"] = { req in
-            var query = [String: String]()
+            var query = [String: AnyObject]()
             do {
                 let data = NSData(bytes: req.body, length: req.body.count)
-                query = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments) as! [String : String]
+                query = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments) as! [String: AnyObject]
             } catch {
             }
 
-            if let type = query["type"], lhs = query["lhs"] {
+            if let type = query["type"] as? String, lhs = query["lhs"] as? [AnyObject] {
                 switch type {
                 case "Getter":
                     let (success,object) = self.chain_getter(lhs)
@@ -87,12 +84,14 @@ public class ConsoleRouter {
                         return self.result_failed(object)
                     }
                 case "Setter":
-                    if let rhs = query["rhs"] {
-                        let (success, left) = self.chain(nil, self.json_parse(lhs), full: false)
+                    if let rhs = query["rhs"] as? [AnyObject] {
+                        let (success, left) = self.chain(nil, self.typepairs(lhs), full: false)
                         let (_, value) = self.chain_getter(rhs)
                         if case .Go = success {
                             if let obj = left {
-                                self.chain_setter(obj, lhs: lhs, value: value)
+                                dispatch_async(dispatch_get_main_queue(), {
+                                    self.chain_setter(obj, lhs: lhs, value: value)
+                                })
                                 if let val = value {
                                     return self.result(val)
                                 } else {
@@ -120,15 +119,24 @@ public class ConsoleRouter {
 
 extension ConsoleRouter {
     
-    func chain_getter(lhs: String) -> ChainResult {
-        let vec: [TypePair] = json_parse(lhs)
+    func chain_getter(lhs: [AnyObject]) -> ChainResult {
+        let vec: [TypePair] = typepairs(lhs)
         return chain(nil, vec, full: true)
     }
 
-    func chain_setter(obj: AnyObject, lhs: String, value: AnyObject?) -> AnyObject? {
-        let vec: [TypePair] = json_parse(lhs)
+    func chain_setter(obj: AnyObject, lhs: [AnyObject], value: AnyObject?) -> AnyObject? {
+        let vec: [TypePair] = typepairs(lhs)
         if let pair = vec.last {
-            self.type_handler.setter_handle(obj, "set" + (pair.second as! String).uppercase_first() + ":", value: value)
+            var val = value
+            let method = pair.second as! String
+            if ["textColor", "backgroundColor"].contains(method) {
+                if "@" == ns_return_types(obj, method) {
+                    if let str = value as? String {
+                        val = UIColorFromString(str)
+                    }
+                }
+            }
+            self.type_handler.setter_handle(obj, "set" + method.uppercase_first() + ":", value: val, second: nil)
         }
         return nil
     }
@@ -136,15 +144,15 @@ extension ConsoleRouter {
     func typepair_chain(obj: AnyObject?, pair: TypePair) -> ChainResult {
         switch pair.first {
         case "string":
-            return (.Go, pair.second)
+            return (.Stop, pair.second)
         case "int":
-            return (.Go, ValueType(type: "q", value: pair.second))
+            return (.Stop, ValueType(type: "q", value: pair.second))
         case "float":
-            return (.Go, ValueType(type: "f", value: pair.second))
+            return (.Stop, ValueType(type: "f", value: pair.second))
         case "bool":
-            return (.Go, ValueType(type: "B", value: pair.second))
+            return (.Stop, ValueType(type: "B", value: pair.second))
         case "address":
-            return (.Go, from_env(pair.second as! String))
+            return (.Go, from_address(String(pair.second)))
         case "symbol":
             if let str = pair.second as? String {
                 switch str {
@@ -152,20 +160,26 @@ extension ConsoleRouter {
                     return (.Stop, nil)
                 default:
                     if let o = obj {
+                        let sel = NSSelectorFromString(str)
                         if swift_property_names(o).contains(str) {
-                            return (.Go, swift_property_for_key(o, str))
+                            let (match, val) = type_handler.getter_handle(o, str)
+                            if case .Match = match {
+                                return (.Go, val)
+                            } else {
+                                return (.Go, swift_property_for_key(o, str))
+                            }
                         } else {
-                            for name in [str, str+":"] {
-                                if o.respondsToSelector(NSSelectorFromString(name)) {
-                                    return (.Go, ValueType(type: "symbol", value: "Function \(name)"))
+                            for name in [str+":"] {
+                                if o.respondsToSelector(sel) {
+                                    return (.Stop, ValueType(type: "symbol", value: "Function \(name)"))
                                 }
                             }
-                            return (.Go, obj)
+                            return (.Stop, nil)
                         }
                     }
                 }
             }
-            return (.Go, nil)
+            return (.Stop, nil)
         case "call":
             if let nameargs = pair.second as? [AnyObject] {
                 let (match, val) = typepair_callargs(obj, nameargs: nameargs)
@@ -173,16 +187,16 @@ extension ConsoleRouter {
                 case .Match:
                     return (.Go, val)
                 case .None:
-                    return (.Stop, val)
+                    return (.Stop, nil)
                 }
-            } else {
-                if let _ = pair.second as? String {
-                    if let o = obj {
-                        if o is NSObject {
-                            return (.Go, nil)
-                        } else {
-                            return (.Stop, ValueType(type: "symbol", value: "Needs subclass NSObject"))
-                        }
+            } else if let name = pair.second as? String {
+                if let o = obj {
+                    let (match, val) = type_handler.typepair_method(o, name: name, [])
+                    switch match {
+                    case .Match:
+                        return (.Go, val)
+                    case .None:
+                        return (.Stop, nil)
                     }
                 }
             }
@@ -259,6 +273,8 @@ extension ConsoleRouter {
                 }
                 let (match, val) = typepair_chain(obj, pair: pair)
                 if case .Go = match {
+                    return chain(val, vec.slice_to_end(1), full: full)
+                } else {
                     if let method = self.var_or_method(pair) {
                         switch method {
                         case is String:
@@ -275,7 +291,11 @@ extension ConsoleRouter {
                             } else if let arr = obj as? [AnyObject] {
                                 return chain_array(arr, meth, 1, vec, full: full)
                             } else {
-                                return (.Go, val)
+                                if nil == val {
+                                    return (.Stop, nil)
+                                } else {
+                                    return (.Stop, val)
+                                }
                             }
                         case is Int:
                             if let arr = obj as? NSArray,
@@ -288,32 +308,33 @@ extension ConsoleRouter {
                             break
                         }
                     }
-                    return (.Go, val)
-                } else {
-                    return (.Stop, val)
+                    return chain(val, vec.slice_to_end(1), full: full)
                 }
             }
             return (.Go, obj)
         } else {
             if let pair = vec.first {
-                let (_, obj) = typepair_chain(nil, pair: pair)
-                if let one = pair.second as? String {
-                    if let c: AnyClass = NSClassFromString(one) {
-                        return chain(c, vec.slice_to_end(1), full: full)
-                    } else if env.keys.contains(one) {
-                        return chain(env[one], vec.slice_to_end(1), full: full)
-                    } else {
-                        let (mat,constant) = type_handler.typepair_constant(one)
-                        if case .Match = mat {
-                            return (.Go, constant)
+                let (cont, obj) = typepair_chain(nil, pair: pair)
+                if case .Go = cont {
+                    return chain(obj, vec.slice_to_end(1), full: full)
+                } else {
+                    if let one = pair.second as? String {
+                        if let c: AnyClass = NSClassFromString(one) {
+                            return chain(c, vec.slice_to_end(1), full: full)
+                        } else if env.keys.contains(one) {
+                            return chain(env[one], vec.slice_to_end(1), full: full)
                         } else {
-                            return (.Stop, obj)
+                            let (mat,constant) = type_handler.typepair_constant(one)
+                            if case .Match = mat {
+                                return (.Go, constant)
+                            } else {
+                                return (.Stop, obj)
+                            }
                         }
                     }
                 }
-                return (.Go, obj)
             }
-            return (.Go, object)
+            return (.Stop, nil)
         }
     }
 }
@@ -336,19 +357,17 @@ extension ConsoleRouter {
     public func register(name: String, object: AnyObject) {
         env[name] = object
     }
-    
-    func from_env(address: String) -> AnyObject? {
-        return env[address]
+
+    func from_address(address: String) -> AnyObject? {
+        var u: UInt64 = 0
+        NSScanner(string: address).scanHexLongLong(&u)
+        let ptr = UnsafeMutablePointer<UInt>(bitPattern: UInt(u))
+        let obj = unsafeBitCast(ptr, AnyObject.self)
+        return obj
     }
-    
-    func memoryof(obj: AnyObject) -> String {
+
+    func addressof(obj: AnyObject) -> String {
         return NSString(format: "%p", unsafeBitCast(obj, Int.self)) as String
-    }
-    
-    func push_to_env(obj: AnyObject) -> [String: String] {
-        let address = memoryof(obj)
-        env[address] = obj
-        return ["address": address]
     }
 
     func var_or_method(pair: TypePair) -> AnyObject? {
@@ -374,30 +393,33 @@ extension ConsoleRouter {
         return nil
     }
 
-    func typepairs(array: [[String: AnyObject]]) -> [TypePair] {
+    func typepairs(syms: [AnyObject]) -> [TypePair] {
         var list = [TypePair]()
-        for dict in array {
-            if let k = dict["first"], let v = dict["second"] {
-                list.append(TypePair(first: k as! String, second: v))
+        for sym in syms {
+            switch sym {
+            case is Float:
+                if String(sym).containsString(".") {
+                    list.append(TypePair(first: "float", second: sym))
+                } else {
+                    list.append(TypePair(first: "int", second: sym))
+                }
+            case let n as Bool:
+                list.append(TypePair(first: "bool", second: n))
+            case let array as [AnyObject]:
+                if array.count > 2 {
+                    Log.info("array ", array)
+                }
+                list.append(TypePair(first: array[0] as! String, second: array[1]))
+            case let str as String:
+                list.append(TypePair(first: "string", second: str))
+            case let any:
+                Log.info("any", any)
+                list.append(TypePair(first: "any", second: any))
             }
         }
         return list
     }
     
-    func json_parse(str: String?) -> [TypePair] {
-        if let s = str {
-            do {
-                let json = try NSJSONSerialization.JSONObjectWithData(s.dataUsingEncoding(NSUTF8StringEncoding)!, options: NSJSONReadingOptions())
-                if let j = json as? [[String: AnyObject]] {
-                    return typepairs(j)
-                }
-            } catch {
-            }
-            return [TypePair(first: "raw", second: s)]
-        } else {
-            return [TypePair]()
-        }
-    }
 }
 
 
@@ -428,11 +450,11 @@ extension ConsoleRouter {
                 }
             }
         case is Int:
-            return result_any(value)
+            return result_int(value)
         case is String:
             return result_string(value)
         case is UIView, is UIScreen:
-            return .OK(.Json(["type": "view", "value": String(value)]))
+            return .OK(.Json(["typ": "view", "address": addressof(value), "value": String(value)]))
         case is [String: AnyObject]:
             var d = [String: String]()
             for (k,v) in (value as! [String: AnyObject]) {
@@ -445,23 +467,31 @@ extension ConsoleRouter {
         default:
             break
         }
-        return result_any(String(value))
+        return .OK(.Json(["typ": "any", "address": addressof(value), "value": String(value)]))
     }
 
+    func result_any_with_address(value: AnyObject) -> HttpResponse {
+        return .OK(.Json(["typ": "any", "address": addressof(value), "value": value]))
+    }
+    
     func result_any(value: AnyObject) -> HttpResponse {
-        return .OK(.Json(["type": "any", "value": value]))
+        return .OK(.Json(["typ": "any", "value": value]))
+    }
+
+    func result_int(value: AnyObject) -> HttpResponse {
+        return .OK(.Json(["typ": "any", "value": value]))
     }
 
     func result_string(value: AnyObject) -> HttpResponse {
-        return .OK(.Json(["type": "string", "value": value]))
+        return .OK(.Json(["typ": "string", "value": value]))
     }
 
     func result_bool(value: AnyObject) -> HttpResponse {
-        return .OK(.Json(["type": "bool", "value": value]))
+        return .OK(.Json(["typ": "bool", "value": value]))
     }
 
     func result_void() -> HttpResponse {
-        return .OK(.Json(["type": "symbol", "value": "nothing"]))
+        return .OK(.Json(["typ": "symbol", "value": "nothing"]))
     }
 
     func result_image(imagedata: NSData?) -> HttpResponse {
@@ -476,14 +506,28 @@ extension ConsoleRouter {
     }
 
     func result_nil() -> HttpResponse {
-        return .OK(.Json(["type": "symbol", "value": "nothing"]))
+        return .OK(.Json(["typ": "symbol", "value": "nothing"]))
     }
 
     func result_failed(obj: AnyObject? = nil) -> HttpResponse {
         if let val = obj as? ValueType {
-            return .OK(.Json(["type": val.type, "value": val.value]))
+            return .OK(.Json(["typ": val.type, "value": val.value]))
         } else {
-            return .OK(.Json(["type": "symbol", "value": "Failed"]))
+            return .OK(.Json(["typ": "symbol", "value": "Failed"]))
         }
     }
+}
+
+
+
+// MARK: Swifter.HttpResponse - Equatable
+
+public func ==(lhs: HttpResponse, rhs: HttpResponse) -> Bool {
+    switch (lhs,rhs) {
+    case let (.OK(.Json(lok)), .OK(.Json(rok))):
+        return String(lok) == String(rok)
+    default:
+        break
+    }
+    return false
 }

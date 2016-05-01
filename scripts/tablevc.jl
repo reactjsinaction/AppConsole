@@ -1,14 +1,25 @@
+# open Demo/TableViewController/TableViewController.xcworkspace
+# Run
+
 using Swifter
 
 vc = initial("http://localhost:8080")
 
-@query vc.view.backgroundColor = UIColor.greenColor()
+sleep(0.5)
 
-@query vc.tableView.frame
+@query vc.tableView.tap(section: 0, row: 1)
+sleep(0.5)
+@query vc.navigationController.pop()
+sleep(0.5)
 
-@query vc.tableView.subviews.count
+@query vc.tableView.tap(index: 2)
+sleep(0.5)
+@query vc.navigationController.pop()
+sleep(0.5)
 
-@query vc.tableView.subviews[0]
+@query vc.tableView.tap(text: "cyan")
+sleep(0.5)
+@query vc.navigationController.pop()
+sleep(0.5)
 
-title = "Hello world"
-@query vc.title = title
+@query vc.navigationController.topViewController
