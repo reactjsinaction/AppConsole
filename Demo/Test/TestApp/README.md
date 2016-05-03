@@ -17,7 +17,7 @@
 
     julia> using Swifter
 
-    julia> vc = initial("http://localhost:8000")
+    julia> vc = initial("http://localhost:8080")
 
     Swifter> b.s
     "b string"

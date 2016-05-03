@@ -146,11 +146,11 @@ extension ConsoleRouter {
         case "string":
             return (.Stop, pair.second)
         case "int":
-            return (.Stop, ValueType(type: "q", value: pair.second))
+            return (.Stop, pair.second)
         case "float":
-            return (.Stop, ValueType(type: "f", value: pair.second))
+            return (.Go, ValueType(type: "f", value: pair.second))
         case "bool":
-            return (.Stop, ValueType(type: "B", value: pair.second))
+            return (.Go, ValueType(type: "B", value: pair.second))
         case "address":
             return (.Go, from_address(String(pair.second)))
         case "symbol":
@@ -291,11 +291,7 @@ extension ConsoleRouter {
                             } else if let arr = obj as? [AnyObject] {
                                 return chain_array(arr, meth, 1, vec, full: full)
                             } else {
-                                if nil == val {
-                                    return (.Stop, nil)
-                                } else {
-                                    return (.Stop, val)
-                                }
+                                return (.Stop, val)
                             }
                         case is Int:
                             if let arr = obj as? NSArray,

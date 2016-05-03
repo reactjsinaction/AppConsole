@@ -183,6 +183,7 @@ class TypeHandler {
     
     // MARK: TypeHandler - setter_handle
     func setter_handle(obj: AnyObject, _ method: String, value: AnyObject?, second: AnyObject?) {
+
         let sel = Selector(method)
         guard obj.respondsToSelector(sel) else {
             return

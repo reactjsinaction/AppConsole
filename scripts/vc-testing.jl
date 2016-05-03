@@ -5,8 +5,9 @@ using Swifter
 using Base.Test
 
 if VERSION < v"0.5-" @eval begin
-    print_with_color(:red, "recommend to use Julia 0.5")
     macro testset(name, block)
+        println(name)
+        eval(block)
     end
 end end
 

@@ -6,8 +6,8 @@
 
     ```
     $ julia scripts/vc-basic.jl
-    $ julia scripts/vc-testing.jl
     $ julia scripts/vc-multiple.jl
+    $ julia scripts/vc-testing.jl
     ```
 
 ### jupyter notebook
