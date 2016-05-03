@@ -42,3 +42,7 @@ for vc in [iphone, simul]
     @query vc.label.text = "Julia & Swift"
     sleep(0.5)
 end
+
+map([iphone, simul]) do vc
+    @query vc.label.text
+end
