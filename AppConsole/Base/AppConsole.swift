@@ -25,7 +25,7 @@ public class AppConsole {
         router.route(server, initial: initial)
         try! server.start(UInt16(port))
         let url = "http://\(localip()):\(port)"
-        Log.info("Console Server has started on \(url)")
+        Log.info("AppConsole Server has started on \(url)")
         block?(router)
         return url
     }
