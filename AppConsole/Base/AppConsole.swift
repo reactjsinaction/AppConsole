@@ -32,9 +32,11 @@ public class AppConsole {
     
     func localip() -> String {
         for interface in Interface.allInterfaces() {
-            if (interface.getName() == "en0") && (interface.getFamily().toString() == "IPv4") {
-                if let addr = interface.getAddress() {
-                    return addr
+            if (interface.name == "en0") {
+                if ["IPv4"].contains(interface.family.toString()) {
+                    if let addr = interface.address {
+                        return addr
+                    }
                 }
             }
         }

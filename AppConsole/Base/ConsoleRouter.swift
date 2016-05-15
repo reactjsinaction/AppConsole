@@ -148,9 +148,9 @@ extension ConsoleRouter {
         case "int":
             return (.Stop, pair.second)
         case "float":
-            return (.Go, ValueType(type: "f", value: pair.second))
+            return (.Go, ValueObject(type: "f", value: pair.second))
         case "bool":
-            return (.Go, ValueType(type: "B", value: pair.second))
+            return (.Go, ValueObject(type: "B", value: pair.second))
         case "address":
             return (.Go, from_address(String(pair.second)))
         case "symbol":
@@ -171,7 +171,7 @@ extension ConsoleRouter {
                         } else {
                             for name in [str+":"] {
                                 if o.respondsToSelector(sel) {
-                                    return (.Stop, ValueType(type: "symbol", value: "Function \(name)"))
+                                    return (.Stop, ValueObject(type: "symbol", value: "Function \(name)"))
                                 }
                             }
                             return (.Stop, nil)
@@ -180,6 +180,7 @@ extension ConsoleRouter {
                 }
             }
             return (.Stop, nil)
+
         case "call":
             if let nameargs = pair.second as? [AnyObject] {
                 let (match, val) = typepair_callargs(obj, nameargs: nameargs)
@@ -209,20 +210,27 @@ extension ConsoleRouter {
 
     func typepair_callargs(object: AnyObject?, nameargs: [AnyObject]) -> TypeMatchResult {
         if let name = nameargs.first as? String,
-            let args = nameargs.last {
+            let arguments = nameargs.last {
             if let obj = object {
-                if let a = args as? [AnyObject] {
-                    return type_handler.typepair_method(obj, name: name, a)
+                if let args = arguments as? [AnyObject] {
+                    if 1 == args.count {
+                        if let strargs = args[0] as? [String] {
+                            if strargs == ["symbol", "nil"] {
+                                return type_handler.typepair_method(obj, name: name, [ValueObject(type: "nil", value: "")])
+                            }
+                        }
+                    }
+                    return type_handler.typepair_method(obj, name: name, args)
                 } else {
                     return type_handler.typepair_method(obj, name: name, [])
                 }
             } else {
-                switch args {
+                switch arguments {
                 case is [Float]:
-                    return type_handler.typepair_function(name, args as! [Float])
+                    return type_handler.typepair_function(name, arguments as! [Float])
                 case is [AnyObject]:
-                    if let a = args as? [[AnyObject]] {
-                        return type_handler.typepair_constructor(name, a)
+                    if let args = arguments as? [[AnyObject]] {
+                        return type_handler.typepair_constructor(name, args)
                     }
                 default:
                     break
@@ -424,8 +432,8 @@ extension ConsoleRouter {
 extension ConsoleRouter {
     func result(value: AnyObject) -> HttpResponse {
         switch value {
-        case is ValueType:
-            if let val = value as? ValueType {
+        case is ValueObject:
+            if let val = value as? ValueObject {
                 switch val.type {
                 case "v":
                     return result_void()
@@ -506,7 +514,7 @@ extension ConsoleRouter {
     }
 
     func result_failed(obj: AnyObject? = nil) -> HttpResponse {
-        if let val = obj as? ValueType {
+        if let val = obj as? ValueObject {
             return .OK(.Json(["typ": val.type, "value": val.value]))
         } else {
             return .OK(.Json(["typ": "symbol", "value": "Failed"]))

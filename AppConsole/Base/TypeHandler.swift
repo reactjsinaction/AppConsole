@@ -15,8 +15,8 @@ class TypeHandler {
 
     // MARK: TypeHandler - getter_handle
     func getter_handle(obj: AnyObject, _ name: String, _ args: [AnyObject]? = nil) -> TypeMatchResult {
-        if let val = obj as? ValueType {
-            return getter_valuetype(val, name)
+        if let val = obj as? ValueObject {
+            return getter_valueobject(val, name)
         }
         
         let sel = Selector(name)
@@ -53,43 +53,43 @@ class TypeHandler {
         case "B": // B Bool
             typealias F = @convention(c) (AnyObject, Selector)-> Bool
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: value))
+            return (.Match, ValueObject(type: returntype, value: value))
         case "d": // d Double
             typealias F = @convention(c) (AnyObject, Selector)-> Double
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: value))
+            return (.Match, ValueObject(type: returntype, value: value))
         case "i", "q": // i int, q CLongLong
             typealias F = @convention(c) (AnyObject, Selector)-> Int
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: value))
+            return (.Match, ValueObject(type: returntype, value: value))
         case "f": // f float
             typealias F = @convention(c) (AnyObject, Selector)-> Float
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: value))
+            return (.Match, ValueObject(type: returntype, value: value))
         case "Q": // Q CUnsignedLongLong
             typealias F = @convention(c) (AnyObject, Selector)-> UInt
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: value))
+            return (.Match, ValueObject(type: returntype, value: value))
         case "{CGPoint=dd}", "{CGPoint=ff}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGPoint
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: NSStringFromCGPoint(value)))
+            return (.Match, ValueObject(type: returntype, value: NSStringFromCGPoint(value)))
         case "{CGSize=dd}", "{CGSize=ff}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGSize
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: NSStringFromCGSize(value)))
+            return (.Match, ValueObject(type: returntype, value: NSStringFromCGSize(value)))
         case "{CGRect={CGPoint=dd}{CGSize=dd}}", "{CGRect={CGPoint=ff}{CGSize=ff}}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGRect
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: NSStringFromCGRect(value)))
+            return (.Match, ValueObject(type: returntype, value: NSStringFromCGRect(value)))
         case "{CGAffineTransform=dddddd}":
             typealias F = @convention(c) (AnyObject, Selector)-> CGAffineTransform
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: NSStringFromCGAffineTransform(value)))
+            return (.Match, ValueObject(type: returntype, value: NSStringFromCGAffineTransform(value)))
         case "{CATransform3D=dddddddddddddddd}":
             typealias F = @convention(c) (AnyObject, Selector)-> CATransform3D
             let value = extractMethodFrom(obj, sel, F.self)(obj, sel)
-            return (.Match, ValueType(type: returntype, value: NSStringFromCATransform3D(value)))
+            return (.Match, ValueObject(type: returntype, value: NSStringFromCATransform3D(value)))
         case let val:
             Log.info("getter_handle val", val)
             break
@@ -97,7 +97,7 @@ class TypeHandler {
         return (.None, nil)
     }
     
-    func getter_valuetype(val: ValueType, _ name: String) -> TypeMatchResult {
+    func getter_valueobject(val: ValueObject, _ name: String) -> TypeMatchResult {
         if let value = val.value as? String {
             switch val.type {
             case "{CGPoint=dd}", "{CGPoint=ff}":
@@ -118,9 +118,9 @@ class TypeHandler {
                 let rect = CGRectFromString(value)
                 switch name {
                 case "origin":
-                    return (.Match, ValueType(type: "{CGPoint=ff}", value: NSStringFromCGPoint(rect.origin)))
+                    return (.Match, ValueObject(type: "{CGPoint=ff}", value: NSStringFromCGPoint(rect.origin)))
                 case "size":
-                    return (.Match, ValueType(type: "{CGSize=ff}", value: NSStringFromCGSize(rect.size)))
+                    return (.Match, ValueObject(type: "{CGSize=ff}", value: NSStringFromCGSize(rect.size)))
                 default:
                     return (.None, nil)
                 }
@@ -128,9 +128,9 @@ class TypeHandler {
                 let rect = CGRectFromString(value)
                 switch name {
                 case "origin":
-                    return (.Match, ValueType(type: "{CGPoint=dd}", value: NSStringFromCGPoint(rect.origin)))
+                    return (.Match, ValueObject(type: "{CGPoint=dd}", value: NSStringFromCGPoint(rect.origin)))
                 case "size":
-                    return (.Match, ValueType(type: "{CGSize=dd}", value: NSStringFromCGSize(rect.size)))
+                    return (.Match, ValueObject(type: "{CGSize=dd}", value: NSStringFromCGSize(rect.size)))
                 default:
                     return (.None, nil)
                 }
@@ -190,15 +190,13 @@ class TypeHandler {
         }
         let argtype = (ns_argument_types(obj, method, nth: 2), ns_argument_types(obj, method, nth: 3))
         
-        var arg: AnyObject
-        if let val = value as? ValueType {
+        var arg: AnyObject? = nil
+        if let val = value as? ValueObject {
             arg = val.value
         } else if let val = value {
             arg = val
-        } else {
-            return
         }
-        
+
         dispatch_async(dispatch_get_main_queue(), {
             switch argtype {
             case ("@",_):
@@ -295,9 +293,22 @@ class TypeHandler {
         }
         return method
     }
-    
+
+    func match_artype(argtype: String, _ arg: AnyObject?) -> Bool {
+        switch argtype {
+        case "@":
+            if let _ = arg as? NSNumber {
+                return false
+            }
+        default:
+            break
+        }
+        return true
+    }
+
     // MARK: TypeHandler - typepair_function
     func typepair_method(obj: AnyObject, name: String, _ args: [AnyObject]) -> TypeMatchResult {
+
         let method = typeair_build_method(name, args)
         let sel = NSSelectorFromString(method)
         
@@ -315,8 +326,14 @@ class TypeHandler {
         var firstarg: AnyObject? = nil
         if let named = args[0] as? [AnyObject] {
             firstarg = named[1]
+        } else if let value = args[0] as? ValueObject {
+            firstarg = value.to_value()
         } else {
             firstarg = args[0]
+        }
+
+        if !match_artype(argtype, firstarg) {
+            return (.None, nil)
         }
 
         switch args.count {
@@ -454,8 +471,8 @@ class TypeHandler {
 
 
 
-// MARK: ValueType
-class ValueType: Equatable, CustomStringConvertible {
+// MARK: ValueObject
+class ValueObject: Equatable, CustomStringConvertible {
     var type: String
     var value: AnyObject
     init(type: String, value: AnyObject) {
@@ -464,12 +481,19 @@ class ValueType: Equatable, CustomStringConvertible {
     }
     var description: String {
         get {
-            return "ValueType(\(type), \(value))"
+            return "ValueObject(\(type), \(value))"
+        }
+    }
+    func to_value() -> AnyObject? {
+        if type == "nil" {
+            return nil
+        } else {
+            return value
         }
     }
 }
 
-func ==(lhs: ValueType, rhs: ValueType) -> Bool {
+func ==(lhs: ValueObject, rhs: ValueObject) -> Bool {
     if lhs.type == rhs.type {
         switch lhs.type {
         case "d", "q", "Q":
@@ -541,12 +565,8 @@ func NSStringFromCATransform3D(transform: CATransform3D) -> String {
 // methods
 extension TypeHandler {
     func typepair_method_returns_void(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?, second: AnyObject? = nil) -> TypeMatchResult {
-        if let secondarg = second {
-            setter_handle(obj, method, value: arg, second: secondarg)
-        } else {
-            setter_handle(obj, method, value: arg, second: nil)
-        }
-        return (.Match, ValueType(type: "v", value: ""))
+        setter_handle(obj, method, value: arg, second: second)
+        return (.Match, ValueObject(type: "v", value: ""))
     }
     
     func typepair_method_returns_bool(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?, second: AnyObject? = nil) -> TypeMatchResult {
@@ -614,7 +634,7 @@ extension TypeHandler {
         }
         if let v = value {
             let returntype = "B"
-            return (.Match, ValueType(type: returntype, value: v))
+            return (.Match, ValueObject(type: returntype, value: v))
         } else {
             return  (.None, nil)
         }
@@ -685,7 +705,7 @@ extension TypeHandler {
         }
         if let v = value {
             let returntype = "q"
-            return (.Match, ValueType(type: returntype, value: v))
+            return (.Match, ValueObject(type: returntype, value: v))
         } else {
             return  (.None, nil)
         }
@@ -756,7 +776,7 @@ extension TypeHandler {
         }
         if let v = value {
             let returntype = "f"
-            return (.Match, ValueType(type: returntype, value: v))
+            return (.Match, ValueObject(type: returntype, value: v))
         } else {
             return (.None, nil)
         }
@@ -827,7 +847,7 @@ extension TypeHandler {
         }
         if let v = value {
             let returntype = "{CGRect={CGPoint=ff}{CGSize=ff}}"
-            return (.Match, ValueType(type: returntype, value: NSStringFromCGRect(v)))
+            return (.Match, ValueObject(type: returntype, value: NSStringFromCGRect(v)))
         } else {
             return (.None, nil)
         }
@@ -836,6 +856,7 @@ extension TypeHandler {
     func typepair_method_returns_instance(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?, second: AnyObject? = nil) -> TypeMatchResult {
         let sel = Selector(method)
         var value: AnyObject? = nil
+
         switch argtype {
         case "B":
             if let a = arg as? Bool {
@@ -866,6 +887,9 @@ extension TypeHandler {
             if let a = arg as? String {
                 typealias F = @convention(c) (AnyObject, Selector, String) -> AnyObject
                 value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+            } else {
+                typealias F = @convention(c) (AnyObject, Selector, AnyObject?) -> AnyObject
+                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg)
             }
         case "{CGPoint=dd}", "{CGPoint=ff}":
             if let a = arg as? String {

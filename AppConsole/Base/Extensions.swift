@@ -341,7 +341,7 @@ func swift_property_for_key(a: AnyObject, _ key: String) -> AnyObject? {
     for child in Mirror(reflecting: a).children {
         if child.label == key {
             if String(typeof(child.value)).hasPrefix("(") {
-                return ValueType(type: typeof(child.value), value: String(child.value))
+                return ValueObject(type: typeof(child.value), value: String(child.value))
             } else {
                 return child.value as? AnyObject
             }
