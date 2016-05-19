@@ -3,8 +3,7 @@
 
 using Swifter
 
-app = initial("http://localhost:8080")
-vc = @query app.window.rootViewController
+vc = initial("http://localhost:8080")
 
 @query vc.label.text = "Hello Swift"
 sleep(0.5)
