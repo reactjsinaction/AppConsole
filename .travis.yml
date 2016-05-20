@@ -1,6 +1,8 @@
 language: swift
 osx_image: xcode7.3
 xcode_sdk: iphonesimulator
+before_install:
+ - gem install cocoapods --no-rdoc --no-ri --no-document --quiet
 script:
 - make
 notifications:
