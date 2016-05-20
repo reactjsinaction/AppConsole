@@ -129,10 +129,16 @@ extension ConsoleRouter {
         if let pair = vec.last {
             var val = value
             let method = pair.second as! String
-            if ["textColor", "backgroundColor"].contains(method) {
+            if let str = value as? String {
                 if "@" == ns_return_types(obj, method) {
-                    if let str = value as? String {
-                        val = UIColorFromString(str)
+                    if str.hasPrefix("<UICTFont: 0x") {
+                        if let font = UIFontFromString(str) {
+                            val = font
+                        }
+                    } else if str.hasPrefix("UIDevice") {
+                        if let color = UIColorFromString(str) {
+                            val = color
+                        }
                     }
                 }
             }
@@ -146,7 +152,7 @@ extension ConsoleRouter {
         case "string":
             return (.Stop, pair.second)
         case "int":
-            return (.Stop, pair.second)
+            return (.Go, pair.second)
         case "float":
             return (.Go, ValueObject(type: "f", value: pair.second))
         case "bool":
@@ -281,6 +287,19 @@ extension ConsoleRouter {
                 }
                 let (match, val) = typepair_chain(obj, pair: pair)
                 if case .Go = match {
+                    if let method = self.var_or_method(pair) {
+                        switch method {
+                        case is Int:
+                            if let arr = obj as? NSArray,
+                                let idx = method as? Int {
+                                if arr.count > idx {
+                                    return chain(arr[idx], vec.slice_to_end(1), full: full)
+                                }
+                            }
+                        default:
+                            break
+                        }
+                    }
                     return chain(val, vec.slice_to_end(1), full: full)
                 } else {
                     if let method = self.var_or_method(pair) {
@@ -300,13 +319,6 @@ extension ConsoleRouter {
                                 return chain_array(arr, meth, 1, vec, full: full)
                             } else {
                                 return (.Stop, val)
-                            }
-                        case is Int:
-                            if let arr = obj as? NSArray,
-                                let idx = method as? Int {
-                                if arr.count > idx {
-                                    return chain(arr[idx], vec.slice_to_end(1), full: full)
-                                }
                             }
                         default:
                             break

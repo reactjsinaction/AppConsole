@@ -15,8 +15,8 @@ class ConsoleRouterTests: XCTestCase {
 
     func test_result() {
         let router = ConsoleRouter()
-        Assert.True( .OK(.Json(["type": "any", "value": "1"])) == router.result(1) )
-        Assert.True( .OK(.Json(["type": "string", "value": "hello"])) == router.result("hello") )
+        Assert.True( .OK(.Json(["typ": "any", "value": 1])) == router.result(1) )
+        Assert.True( .OK(.Json(["typ": "string", "value": "hello"])) == router.result("hello") )
     }
 
 }

@@ -12,8 +12,8 @@ import XCTest
 
 class TypeTests: XCTestCase {
 
-    func test_valuetype() {
-        let val = ValueType(type: "q", value: 1)
+    func test_valueobject() {
+        let val = ValueObject(type: "q", value: 1)
         Assert.equal(1, val.value as? Int)
     }
 
