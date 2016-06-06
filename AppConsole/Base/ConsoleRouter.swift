@@ -174,13 +174,13 @@ extension ConsoleRouter {
                             } else {
                                 return (.Go, swift_property_for_key(o, str))
                             }
-                        } else {
-                            for name in [str+":"] {
-                                if o.respondsToSelector(sel) {
-                                    return (.Stop, ValueObject(type: "symbol", value: "Function \(name)"))
-                                }
+                        } else if o.respondsToSelector(sel) {
+                            let (match, val) = type_handler.getter_handle(o, str)
+                            if case .Match = match {
+                                return (.Go, val)
+                            } else if nil == val {
+                                return (.Stop, ValueObject(type: "nil", value: ""))
                             }
-                            return (.Stop, nil)
                         }
                     }
                 }

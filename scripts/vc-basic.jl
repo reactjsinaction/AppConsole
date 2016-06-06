@@ -14,7 +14,7 @@ sleep(0.5)
 sleep(0.5)
 
 @query vc.label.numberOfLines = 2
-@query vc.label.text = "Hello Swift\nHelloJulia"
+@query vc.label.text = "Hello Swift\nHello Julia"
 
 sleep(0.5)
 
