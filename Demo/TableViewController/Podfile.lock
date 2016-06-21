@@ -4,10 +4,12 @@ PODS:
 
 DEPENDENCIES:
   - NetUtils
-  - Swifter
+  - Swifter (= 1.1.4)
 
 SPEC CHECKSUMS:
   NetUtils: 5b2e30831df2e7db75962837324187a01a1c0c53
   Swifter: a95fe83da8c1161855cb2fa86bbd730e90cabe3a
 
-COCOAPODS: 0.39.0
+PODFILE CHECKSUM: d3f6dc95eba4be73f9fffd658fb66dd2a21c9a40
+
+COCOAPODS: 1.0.1

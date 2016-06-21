@@ -1,15 +1,14 @@
 # open Demo/ViewController/ViewController.xcworkspace
 # Run
 
-using Swifter
-using Base.Test
+if VERSION >= v"0.5-"
+    using Base.Test
+else
+    using BaseTestNext
+    const Test = BaseTestNext
+end
 
-if VERSION < v"0.5-" @eval begin
-    macro testset(name, block)
-        println(name)
-        eval(block)
-    end
-end end
+using Swifter
 
 
 vc = initial("http://localhost:8080")
@@ -67,10 +66,12 @@ end
     
     @query NSBundle.mainBundle.bundleIdentifier
     @test "com.factor.ViewController" == @query NSBundle.mainBundle.infoDictionary["CFBundleIdentifier"]
-    @query NSBundle.mainBundle.infoDictionary.keys
     @query NSBundle.mainBundle.infoDictionary.keys.sort
     @query NSBundle.mainBundle.infoDictionary.keys[0]
     @query NSBundle.mainBundle.infoDictionary.keys[1]
     @query NSBundle.mainBundle.infoDictionary.values
+
+    @test "CFBundleSupportedPlatforms" in valueof(@query NSBundle.mainBundle.infoDictionary.keys)
+    @test "CFBundleSupportedPlatforms" in keys(valueof(@query NSBundle.mainBundle.infoDictionary))
 
 end

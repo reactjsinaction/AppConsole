@@ -1,3 +1,5 @@
+target 'UIControls'
+
 use_frameworks!
-pod 'Swifter'
+pod 'Swifter', '1.1.4'
 pod 'NetUtils'
