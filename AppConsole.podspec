@@ -133,6 +133,6 @@ Pod::Spec.new do |s|
 
   # s.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
   s.dependency "NetUtils"
-  s.dependency "Swifter", :tag => '1.1.4'
+  s.dependency "Swifter", '1.1.4'
 
 end
