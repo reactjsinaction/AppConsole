@@ -1,16 +1,18 @@
 PODS:
-  - AppConsole (0.2.3):
+  - AppConsole (0.2.12):
     - NetUtils
-    - Swifter
-  - NetUtils (1.3.2)
-  - Swifter (1.1.3)
+    - Swifter (= 1.1.4)
+  - NetUtils (2.0.1)
+  - Swifter (1.1.4)
 
 DEPENDENCIES:
   - AppConsole
 
 SPEC CHECKSUMS:
-  AppConsole: 4605ec5f41187014d1a1bd9e412282e88c008230
-  NetUtils: 0e2985b5cbd56824b9304a26aea4784f0927f23c
-  Swifter: 52433dd6616050450a69513ef5d1452a2d089096
+  AppConsole: 9c2b898d8e016b0eedd1821b29bdef3b6afcb322
+  NetUtils: 5b2e30831df2e7db75962837324187a01a1c0c53
+  Swifter: a95fe83da8c1161855cb2fa86bbd730e90cabe3a
 
-COCOAPODS: 0.39.0
+PODFILE CHECKSUM: f4ee4e36a3e4dff78cb67f869ba6eb03541e7b12
+
+COCOAPODS: 1.0.1
