@@ -5,6 +5,7 @@ script:
 - make
 before_install:
   - gem install cocoapods
+  - pod repo update
 notifications:
   email: false
   slack:
