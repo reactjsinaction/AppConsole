@@ -1,5 +1,10 @@
-target 'ViewController'
-
 use_frameworks!
-pod 'Swifter', '1.1.4'
-pod 'NetUtils'
+
+def pods
+  pod 'Swifter'
+  pod 'NetUtils'
+end
+
+target 'ViewController' do
+  pods
+end

@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "AppConsole"
-  s.version      = "0.2.12"
+  s.version      = "0.2.13"
   s.summary      = "AppConsole for Swifter.jl"
 
   # This description is used to generate tags and improve search results.
@@ -133,6 +133,6 @@ Pod::Spec.new do |s|
 
   # s.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
   s.dependency "NetUtils"
-  s.dependency "Swifter", '1.1.4'
+  s.dependency "Swifter"
 
 end

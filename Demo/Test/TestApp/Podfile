@@ -1,5 +1,14 @@
-target 'TestApp'
-
 use_frameworks!
-pod 'Swifter', '1.1.4'
-pod 'NetUtils'
+
+def pods
+  pod 'Swifter'
+  pod 'NetUtils'
+end
+
+target 'TestApp' do
+  pods
+end
+
+target 'TestAppTests' do
+  pods
+end

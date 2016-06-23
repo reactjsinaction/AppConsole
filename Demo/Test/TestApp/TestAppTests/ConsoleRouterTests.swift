@@ -7,8 +7,6 @@
 //
 
 import Foundation
-import Swifter
-
 import XCTest
 
 class ConsoleRouterTests: XCTestCase {

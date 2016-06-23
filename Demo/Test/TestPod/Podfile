@@ -1,4 +1,9 @@
-target 'TestPod'
-
 use_frameworks!
-pod 'AppConsole'
+
+def pods
+  pod 'AppConsole'
+end
+
+target 'TestPod' do
+  pods
+end
