@@ -187,15 +187,15 @@ extension UIView {
         if bounds.size == CGSizeZero {
             return nil
         } else {
-//            if typeof(self).hasPrefix("_") {
-//                return nil
-//            } else {
+            if typeof(self).hasPrefix("_") {
+                return nil
+            } else {
                 UIGraphicsBeginImageContextWithOptions(self.bounds.size, false, UIScreen.mainScreen().scale)
                 self.drawViewHierarchyInRect(self.bounds, afterScreenUpdates: false)
                 let image: UIImage = UIGraphicsGetImageFromCurrentImageContext()
                 UIGraphicsEndImageContext()
                 return UIImagePNGRepresentation(image)
-//            }
+            }
         }
     }
 }

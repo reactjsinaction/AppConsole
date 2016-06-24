@@ -183,6 +183,7 @@ class TypeHandler {
     
     // MARK: TypeHandler - setter_handle
     func setter_handle(obj: AnyObject, _ method: String, value: AnyObject?, second: AnyObject?) {
+
         let sel = Selector(method)
         guard obj.respondsToSelector(sel) else {
             return
@@ -588,9 +589,7 @@ func NSStringFromCATransform3D(transform: CATransform3D) -> String {
 // methods
 extension TypeHandler {
     func typepair_method_returns_void(obj: AnyObject, _ method: String, _ argtype: String, _ arg: AnyObject?, second: AnyObject? = nil) -> TypeMatchResult {
-        dispatch_async(dispatch_get_main_queue(), {
-            self.setter_handle(obj, method, value: arg, second: second)
-        })
+        self.setter_handle(obj, method, value: arg, second: second)
         return (.Match, ValueObject(type: "v", value: ""))
     }
     

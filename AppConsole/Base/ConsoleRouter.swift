@@ -31,12 +31,10 @@ public class ConsoleRouter {
     func route(server: HttpServer, initial: AnyObject) {
 
         server["/"] = { req in
-            let info = [String]()
-            return self.result(info)
+            return .OK(.Html("<html><head><title>iOS REPL with Swifter.jl + AppConsole</title></head><body>iOS REPL with <a href=\"https://github.com/wookay/Swifter.jl\">Swifter.jl</a> +  <a href=\"https://github.com/wookay/AppConsole\">AppConsole</a></body></html>"))
         }
-        
+
         server["/initial"] = { req in
-//            self.register(self.addressof(initial), object: initial)
             return self.result(initial)
         }
         
@@ -56,6 +54,10 @@ public class ConsoleRouter {
                         return self.result_image(view.to_data())
                     } else if let screen = object as? UIScreen {
                         return self.result_image(screen.to_data())
+                    }
+                } else if "address" == name {
+                    if let view = self.from_address(value) as? UIView {
+                        return self.result_image(view.to_data())
                     }
                 }
             }
