@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "AppConsole"
-  s.version      = "0.2.14"
+  s.version      = "0.2.15"
   s.summary      = "AppConsole for Swifter.jl"
 
   # This description is used to generate tags and improve search results.

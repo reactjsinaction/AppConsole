@@ -7,7 +7,26 @@
 //
 
 import UIKit
+import CoreData
 
+
+// MARK: NSManagedObjectContext - fetch
+extension NSManagedObjectContext {
+    func fetch(entityName: String) -> [AnyObject] {
+        return fetch(entityName, predicate: "")
+    }
+    func fetch(entityName: String, predicate: String) -> [AnyObject] {
+        let fetchReq = NSFetchRequest(entityName: entityName)
+        if !predicate.isEmpty {
+            fetchReq.predicate = NSPredicate(format: predicate)
+        }
+        do {
+            return try executeFetchRequest(fetchReq)
+        } catch {
+            return []
+        }
+    }
+}
 
 
 // MARK: UITableView - tap

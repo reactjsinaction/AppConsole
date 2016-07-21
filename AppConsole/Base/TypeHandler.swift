@@ -910,7 +910,12 @@ extension TypeHandler {
         case "@":
             if let a = arg as? String {
                 typealias F = @convention(c) (AnyObject, Selector, String) -> AnyObject
-                value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+                typealias F2 = @convention(c) (AnyObject, Selector, String, String) -> AnyObject
+                if let b = second as? String {
+                    value = self.extractMethodFrom(obj, sel, F2.self)(obj, sel, a, b)
+                } else {
+                    value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, a)
+                }
             } else {
                 typealias F = @convention(c) (AnyObject, Selector, AnyObject?) -> AnyObject
                 value = self.extractMethodFrom(obj, sel, F.self)(obj, sel, arg)
